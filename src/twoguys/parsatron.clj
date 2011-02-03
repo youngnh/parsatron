@@ -1,4 +1,5 @@
 (ns twoguys.parsatron
+  (:refer-clojure :exclude [char])
   (:require [clojure.string :as str]))
 
 (defrecord InputState [input pos])
@@ -22,6 +23,9 @@
 (defn unknown-error [{:keys [pos] :as state}]
   (ParseError. pos ["Error"]))
 
+(defn unexpect-error [msg pos]
+  (ParseError. pos [msg]))
+
 (defn merge-errors [{:keys [pos] :as err} other-err]
   (ParseError. pos (flatten (concat (:msgs err) (:msgs other-err)))))
 
@@ -31,7 +35,7 @@
   (fn [state cok cerr eok eerr]
     (eok x state)))
 
-(defn next [p q]
+(defn nxt [p q]
   (fn [state cok cerr eok eerr]
     (letfn [(pcok [item state]
                   (q state cok cerr cok cerr))
@@ -64,11 +68,39 @@
       (p state cok cerr eok peerr))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; token
+(defn token [consume? nextpos-f show-f]
+  (fn [{:keys [input pos] :as state} cok cerr eok eerr]
+    (if-let [s (seq input)]
+      (let [item (first s)
+            rest-of-input (next s)]
+        (if (consume? item)
+          (let [newpos (nextpos-f pos item rest-of-input)
+                newstate (InputState. rest-of-input newpos)]
+            (cok item newstate))
+          (eerr (unexpect-error (str "Found unexpected " (show-f item)) pos))))
+      (eerr (unexpect-error "Input is empty" pos)))))
+
+(defn updatepos-char [{:keys [line column]} c]
+  (case c
+        \newline (SourcePos. (inc line) 1)
+        (SourcePos. line (inc column))))
+
+(defn satisfy [pred]
+  (token pred
+         (fn [pos c cs]
+           (updatepos-char pos c))
+         str))
+
+(defn char [c]
+  (satisfy #(= c %)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; macros
 (defmacro >>
   ([m] m)
-  ([m n] `(next ~m ~n))
-  ([m n & ms] `(next ~m (>> ~n ~@ms))))
+  ([m n] `(nxt ~m ~n))
+  ([m n & ms] `(nxt ~m (>> ~n ~@ms))))
 
 (defmacro p-let [[& bindings] & body]
   (let [[bind-form p] (take 2 bindings)]
