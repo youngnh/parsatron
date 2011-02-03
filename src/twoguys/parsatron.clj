@@ -1,4 +1,5 @@
-(ns twoguys.parsatron)
+(ns twoguys.parsatron
+  (:require [clojure.string :as str]))
 
 (defrecord InputState [input pos])
 (defrecord SourcePos [line column])
@@ -11,14 +12,18 @@
 (defprotocol ShowableError
   (show-error [this]))
 
-(deftype UnknownParseError [pos]
+(defrecord ParseError [pos msgs]
   ShowableError
-  (show-error [_] (str "Error at"
+  (show-error [_] (str (str/join ", " msgs)
+                       " at"
                        " line: " (:line pos)
                        " column: " (:column pos))))
 
 (defn unknown-error [{:keys [pos] :as state}]
-  (UnknownParseError. pos))
+  (ParseError. pos ["Error"]))
+
+(defn merge-errors [{:keys [pos] :as err} other-err]
+  (ParseError. pos (flatten (concat (:msgs err) (:msgs other-err)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; m
@@ -49,6 +54,14 @@
 (defn never []
   (fn [state cok cerr eok eerr]
     (eerr (unknown-error state))))
+
+(defn either [p q]
+  (fn [state cok cerr eok eerr]
+    (letfn [(peerr [err-from-p]
+                   (letfn [(qeerr [err-from-q]
+                                  (eerr (merge-errors err-from-p err-from-q)))]
+                     (q state cok cerr eok qeerr)))]
+      (p state cok cerr eok peerr))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; macros
