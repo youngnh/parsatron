@@ -6,6 +6,22 @@
 (defrecord Ok [item])
 (defrecord Err [errmsg])
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; errors
+(defprotocol ShowableError
+  (show-error [this]))
+
+(deftype UnknownParseError [pos]
+  ShowableError
+  (show-error [_] (str "Error at"
+                       " line: " (:line pos)
+                       " column: " (:column pos))))
+
+(defn unknown-error [{:keys [pos] :as state}]
+  (UnknownParseError. pos))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; m
 (defn always [x]
   (fn [state cok cerr eok eerr]
     (eok x state)))
@@ -28,6 +44,14 @@
                     (q state cok cerr eok eerr)))]
       (p state pcok cerr peok eerr))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; m+
+(defn never []
+  (fn [state cok cerr eok eerr]
+    (eerr (unknown-error state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; macros
 (defmacro >>
   ([m] m)
   ([m n] `(next ~m ~n))
@@ -39,6 +63,8 @@
       `(bind ~p (fn [~bind-form] ~@body))
       `(bind ~p (fn [~bind-form] (p-let ~(drop 2 bindings) ~@body))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; run parsers
 (defn run-parser [p state]
   (letfn [(cok [item ztate]
                (Ok. item))
@@ -47,7 +73,7 @@
           (eok [item state-prime]
                (Ok. item))
           (eerr [err]
-                (Err. err))]
+                (Err. (show-error err)))]
     (p state cok cerr eok eerr)))
 
 (defn run [p input]
