@@ -53,6 +53,17 @@
                     (q state cok cerr eok eerr)))]
       (p state pcok cerr peok eerr))))
 
+(defmacro >>
+  ([m] m)
+  ([m n] `(nxt ~m ~n))
+  ([m n & ms] `(nxt ~m (>> ~n ~@ms))))
+
+(defmacro p-let [[& bindings] & body]
+  (let [[bind-form p] (take 2 bindings)]
+    (if (= 2 (count bindings))
+      `(bind ~p (fn [~bind-form] ~@body))
+      `(bind ~p (fn [~bind-form] (p-let ~(drop 2 bindings) ~@body))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; m+
 (defn never []
@@ -81,6 +92,19 @@
           (eerr (unexpect-error (str "Found unexpected " (show-f item)) pos))))
       (eerr (unexpect-error "Input is empty" pos)))))
 
+(defn many [p]
+  (fn [state cok cerr eok eerr]
+    (letfn [(many-err [err]
+                      (unexpect-error "Combinator '*' is applied to a parser that accepts an empty string"))
+            (pcok [coll]
+                  (fn [item state]
+                    (letfn [(exit-cok [_]
+                                      (cok (conj coll item) state))]
+                      (p state (pcok (conj coll item)) cerr many-err exit-cok))))
+            (peerr [_]
+                   (eok [] state))]
+      (p state (pcok []) cerr many-err peerr))))
+
 (defn updatepos-char [{:keys [line column]} c]
   (case c
         \newline (SourcePos. (inc line) 1)
@@ -95,18 +119,25 @@
 (defn char [c]
   (satisfy #(= c %)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; macros
-(defmacro >>
-  ([m] m)
-  ([m n] `(nxt ~m ~n))
-  ([m n & ms] `(nxt ~m (>> ~n ~@ms))))
+(defn any-char []
+  (satisfy (constantly true)))
 
-(defmacro p-let [[& bindings] & body]
-  (let [[bind-form p] (take 2 bindings)]
-    (if (= 2 (count bindings))
-      `(bind ~p (fn [~bind-form] ~@body))
-      `(bind ~p (fn [~bind-form] (p-let ~(drop 2 bindings) ~@body))))))
+(defn digit []
+  (satisfy #(Character/isDigit %)))
+
+(defn letter []
+  (satisfy #(Character/isLetter %)))
+
+(defn between [open close p]
+  (p-let [_ open
+          x p
+          _ close]
+         (always x)))
+
+(defn many1 [p]
+  (p-let [x p
+          xs (many p)]
+         (always (conj xs x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; run parsers
