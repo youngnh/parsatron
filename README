@@ -1,17 +1,76 @@
-# parsatron
+# The Parsatron
 
-FIXME: write description
+Born from Haskell's Parsec library, The Parsatron is a functional
+parser library. The Parsatron provides a lot of very small functions that can
+be combined into larger ones to very quickly write parsers for languages.
+
+Like all parser combinator libraries, The Parsatron produces recursive-descent
+parsers that are best suited for LL(1) grammars. However, also like it's
+brethren, The Parsatron has infinite lookahead which means you can try and
+parse any insane thing you'd like and if it doesn't work out, fall back to where
+you started. It's a feature that's worked out well for others. I'm sure you'll
+find something useful to do with it.
 
 ## Usage
 
-FIXME: write
+A basic syntax checker for a certain profane esoteric programming language could
+be defined as follows:
+
+    (defparser instruction []
+      (choice (char \>)
+              (char \<)
+              (char \+)
+              (char \-)
+              (char \.)
+              (char \,)
+              (between (char \[) (char \]) (many (instruction)))))
+
+    (defparser bf []
+      (many (instruction)))
+
+The `defparser` forms create new parsers that you can combine into other, more
+complex parsers. As you can see in this example, those parsers can be recursive.
+
+The `choice`, `char`, `between` and `many` functions you see are themselves
+combinators, provided *gratis* by the library. Some, like `choice`, `many`, and
+`between`, take parsers as arguments and return you a new one, wholly different,
+but exhibiting eerily familiar behavior. Some, like `char`, take less exotic input
+(in this case, a humble character) and return more basic parsers, that perform
+what is asked of them without hestitation or spite.
+
+You execute a parser over some input via the `run` form.
+
+    (run (bf) ",>++++++[<-------->-],[<+>-]<.")
+
+Currently, The Parsatron only provides character-oriented parsers, but the ideas
+it's built on are powerful enough that with the right series of commits, it can
+be made to run over sequence of arbitrary "tokens". Clojure's handling of
+sequences and sequence-like things is a feature deeply ingrained in the language's
+ethos. Look for expansion in this area.
+
+Beyond just verifying that a string is a valid member of some language, The
+Parsatron offers you facilities for interacting with and operating on the things
+you parse via sequencing of multiple parsers and binding of their results. The
+macros `>>` and `p-let` embody this facility.
+
+As an example, bencoded strings, are prefixed by their length and a colon:
+
+    (defparser ben-string []
+      (p-let [length (integer)]
+        (>> (char \:)
+            (times length (any-char)))))
+
+`p-let` allows you to capture and name the result of a parser so it's value may
+be used later.  `>>` is very similar to Clojure's `do` in that it executes it's
+forms in order, but "throws away" all but the value of the last form.
 
 ## Installation
 
-FIXME: write
+You can use The Parsatron by including `[the/parsatron "0.0.1"]` in your `project.clj` dependencies.
+It's available for download from Clojars.
 
 ## License
 
-Copyright (C) 2010 FIXME
+Copyright (C) 2011 Nate Young
 
 Distributed under the Eclipse Public License, the same as Clojure.
