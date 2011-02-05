@@ -5,11 +5,11 @@ parser library. The Parsatron provides a lot of very small functions that can
 be combined into larger ones to very quickly write parsers for languages.
 
 Like all parser combinator libraries, The Parsatron produces recursive-descent
-parsers that are best suited for LL(1) grammars. However, also like it's
-brethren, The Parsatron has infinite lookahead which means you can try and
-parse any insane thing you'd like and if it doesn't work out, fall back to where
-you started. It's a feature that's worked out well for others. I'm sure you'll
-find something useful to do with it.
+parsers that are best suited for LL(1) grammars. However, The Parsatron offers
+*infinite lookahead* which means you can try and parse any insane thing you'd
+like and if it doesn't work out, fall back to where you started. It's a feature
+that's worked out well for others. I'm sure you'll find something useful to do
+with it.
 
 ## Usage
 
@@ -48,9 +48,11 @@ be made to run over sequence of arbitrary "tokens". Clojure's handling of
 sequences and sequence-like things is a feature deeply ingrained in the language's
 ethos. Look for expansion in this area.
 
+* * * * *
+
 Beyond just verifying that a string is a valid member of some language, The
 Parsatron offers you facilities for interacting with and operating on the things
-you parse via sequencing of multiple parsers and binding of their results. The
+you parse via sequencing of multiple parsers and binding their results. The
 macros `>>` and `p-let` embody this facility.
 
 As an example, bencoded strings, are prefixed by their length and a colon:
@@ -61,8 +63,10 @@ As an example, bencoded strings, are prefixed by their length and a colon:
             (times length (any-char)))))
 
 `p-let` allows you to capture and name the result of a parser so it's value may
-be used later.  `>>` is very similar to Clojure's `do` in that it executes it's
+be used later. `>>` is very similar to Clojure's `do` in that it executes it's
 forms in order, but "throws away" all but the value of the last form.
+
+    (run (ben-string) "4:spam") ;; => [\s \p \a \m]
 
 ## Installation
 
