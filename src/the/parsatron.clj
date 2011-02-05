@@ -53,6 +53,10 @@
                     (q state cok cerr eok eerr)))]
       (p state pcok cerr peok eerr))))
 
+(defmacro defparser [name args & body]
+  `(fn ~name ~args
+     (>> ~@body)))
+
 (defmacro >>
   ([m] m)
   ([m n] `(nxt ~m ~n))
