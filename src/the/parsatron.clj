@@ -1,4 +1,4 @@
-(ns twoguys.parsatron
+(ns the.parsatron
   (:refer-clojure :exclude [char])
   (:require [clojure.string :as str]))
 
@@ -98,8 +98,8 @@
 
 (defn many [p]
   (fn [state cok cerr eok eerr]
-    (letfn [(many-err [err]
-                      (unexpect-error "Combinator '*' is applied to a parser that accepts an empty string"))
+    (letfn [(many-err [_ _]
+		      (throw (RuntimeException. "Combinator '*' is applied to a parser that accepts an empty string")))
             (pcok [coll]
                   (fn [item state]
                     (letfn [(exit-cok [_]
