@@ -1,4 +1,5 @@
-(ns parsatron.languages.bencode)
+(ns parsatron.languages.bencode
+  (:use [the.parsatron]))
 
 (declare ben-value)
 
@@ -18,8 +19,9 @@
 
 (defparser ben-bytestring []
   (p-let [length (positive-int)
-          _ (char \:)]
-         (times length (any-char))))
+          _ (char \:)
+          chars (times length (any-char))]
+         (always (apply str chars))))
 
 (defparser ben-list []
   (between (char \l) (char \e)
@@ -28,7 +30,7 @@
 (defparser ben-dictionary []
   (let [entry (p-let [key (ben-value)
                       val (ben-value)]
-                     (always [key value]))]
+                     (always [key val]))]
     (between (char \d) (char \e)
              (p-let [entries (many (entry))]
                     (always (into {} entries))))))

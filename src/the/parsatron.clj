@@ -109,6 +109,25 @@
                    (eok [] state))]
       (p state (pcok []) cerr many-err peerr))))
 
+(defn times [n p]
+  (if (= n 0)
+    (always [])
+    (fn [state cok cerr eok eerr]
+      (letfn [(pcok [item state]
+		    (let [q (times (dec n) p)]
+		      (letfn [(qcok [items state]
+				    (cok (cons item items) state))]
+			(q state qcok cerr qcok eerr))))
+	      (peok [item state]
+		    (eok (repeat n item) state))]
+	(p state pcok cerr peok eerr)))))
+
+(defn choice [& parsers]
+  (if (empty? parsers)
+    (never)
+    (let [p (first parsers)]
+      (either p (apply choice (rest parsers))))))
+
 (defn updatepos-char [{:keys [line column]} c]
   (case c
         \newline (SourcePos. (inc line) 1)
@@ -141,7 +160,7 @@
 (defn many1 [p]
   (p-let [x p
           xs (many p)]
-         (always (conj xs x))))
+         (always (cons x xs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; run parsers

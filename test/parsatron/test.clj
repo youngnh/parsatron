@@ -64,3 +64,28 @@
                         (many (either (char \a)
                                       (char \b)))
                         "aababbc"))))
+
+(deftest test-times
+  (testing "0 times returns [], and does not consume"
+    (is (parser-result? [] (times 0 (char \a)) "")))
+
+  (testing "throws an error (from underlying parser) if fewer than specified"
+    (are [input] (thrown-with-msg? RuntimeException #"Input is empty"
+                   (run (times 3 (char \a)) input))
+         ""
+         "a"
+         "aa"))
+
+  (testing "returns a list with the results"
+    (is (parser-result? [\a \a \a] (times 3 (char \a)) "aaa"))
+    (is (parser-result? [5 5 5] (times 3 (always 5)) ""))))
+
+(deftest test-choice
+  (testing "choice with no choices throws an exception"
+    (is (thrown? RuntimeException (run (choice) ""))))
+
+  (testing "first parser to succeed returns result"
+    (are [input] (parser-result? (first input) (choice (char \a) (char \b) (char \c)) input)
+         "a"
+         "b"
+         "c")))
