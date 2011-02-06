@@ -28,7 +28,11 @@
     (is (parser-result? 5 (either (always 5) (always 3)) "")))
 
   (testing "second parser succeeds, when first fails with empty"
-    (is (parser-result? 5 (either (never) (always 5)) ""))))
+    (is (parser-result? 5 (either (never) (always 5)) "")))
+
+  (testing "when neither succeed, errors are merged"
+    (is (thrown-with-msg? RuntimeException #"Found unexpected c, Found unexpected c"
+          (run (either (char \a) (char \b)) "c")))))
 
 (deftest test-token
   (testing "throws error on empty input"

@@ -54,7 +54,7 @@
       (p state pcok cerr peok eerr))))
 
 (defmacro defparser [name args & body]
-  `(fn ~name ~args
+  `(defn ~name ~args
      (>> ~@body)))
 
 (defmacro >>
