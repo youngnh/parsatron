@@ -99,7 +99,7 @@
 (defn many [p]
   (fn [state cok cerr eok eerr]
     (letfn [(many-err [_ _]
-		      (throw (RuntimeException. "Combinator '*' is applied to a parser that accepts an empty string")))
+                      (throw (RuntimeException. "Combinator '*' is applied to a parser that accepts an empty string")))
             (pcok [coll]
                   (fn [item state]
                     (letfn [(exit-cok [_]
@@ -114,13 +114,13 @@
     (always [])
     (fn [state cok cerr eok eerr]
       (letfn [(pcok [item state]
-		    (let [q (times (dec n) p)]
-		      (letfn [(qcok [items state]
-				    (cok (cons item items) state))]
-			(q state qcok cerr qcok eerr))))
-	      (peok [item state]
-		    (eok (repeat n item) state))]
-	(p state pcok cerr peok eerr)))))
+                    (let [q (times (dec n) p)]
+                      (letfn [(qcok [items state]
+                                    (cok (cons item items) state))]
+                        (q state qcok cerr qcok eerr))))
+              (peok [item state]
+                    (eok (repeat n item) state))]
+        (p state pcok cerr peok eerr)))))
 
 (defn choice [& parsers]
   (if (empty? parsers)
