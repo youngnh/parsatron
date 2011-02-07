@@ -11,4 +11,5 @@
           (between (char \[) (char \]) (many (instruction)))))
 
 (defparser bf []
-  (many (instruction)))
+  (many (instruction))
+  (eof))
