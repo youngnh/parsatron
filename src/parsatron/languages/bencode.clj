@@ -32,7 +32,7 @@
                       val (ben-value)]
                      (always [key val]))]
     (between (char \d) (char \e)
-             (p-let [entries (many (entry))]
+             (p-let [entries (many entry)]
                     (always (into {} entries))))))
 
 (defparser ben-value []

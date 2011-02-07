@@ -1,6 +1,6 @@
 (ns parsatron.languages.test-bencode
   (:use [the.parsatron]
-	[parsatron.languages.bencode]
+        [parsatron.languages.bencode]
         [clojure.test]))
 
 (deftest test-ben-integer
@@ -14,3 +14,7 @@
 (deftest test-ben-list
   (are [expected input] (= expected (run (ben-list) input))
        [42 "spam"] "li42e4:spame"))
+
+(deftest test-ben-dictionary
+  (are [expected input] (= expected (run (ben-dictionary) input))
+       [{42 "spam", "spam" 42} "di42e4:spam4:spami42ee"]))
