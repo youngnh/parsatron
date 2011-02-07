@@ -24,7 +24,10 @@
   (ParseError. pos ["Error"]))
 
 (defn unexpect-error [msg pos]
-  (ParseError. pos [msg]))
+  (ParseError. pos [(str "Unexpected " msg)]))
+
+(defn expect-error [msg pos]
+  (ParseError. pos [(str "Expected " msg)]))
 
 (defn merge-errors [{:keys [pos] :as err} other-err]
   (ParseError. pos (flatten (concat (:msgs err) (:msgs other-err)))))
@@ -95,7 +98,7 @@
           (let [newpos (nextpos-f pos item rest-of-input)
                 newstate (InputState. rest-of-input newpos)]
             (cok item newstate))
-          (eerr (unexpect-error (str "Found unexpected " (show-f item)) pos))))
+          (eerr (unexpect-error (show-f item) pos))))
       (eerr (unexpect-error "Input is empty" pos)))))
 
 (defn many [p]
@@ -129,6 +132,12 @@
     (never)
     (let [p (first parsers)]
       (either p (apply choice (rest parsers))))))
+
+(defn eof []
+  (fn [{:keys [input pos] :as state} cok cerr eok eerr]
+    (if (empty? input)
+      (eok nil state)
+      (eerr (expect-error "end of input" pos)))))
 
 (defn updatepos-char [{:keys [line column]} c]
   (case c
@@ -167,11 +176,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; run parsers
 (defn run-parser [p state]
-  (letfn [(cok [item ztate]
+  (letfn [(cok [item _]
                (Ok. item))
           (cerr [err]
-                (Err. err))
-          (eok [item state-prime]
+                (Err. (show-error err)))
+          (eok [item _]
                (Ok. item))
           (eerr [err]
                 (Err. (show-error err)))]

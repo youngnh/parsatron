@@ -31,7 +31,7 @@
     (is (parser-result? 5 (either (never) (always 5)) "")))
 
   (testing "when neither succeed, errors are merged"
-    (is (thrown-with-msg? RuntimeException #"Found unexpected c, Found unexpected c"
+    (is (thrown-with-msg? RuntimeException #"Unexpected c, Unexpected c"
           (run (either (char \a) (char \b)) "c")))))
 
 (deftest test-token
@@ -48,7 +48,7 @@
           nxtpos (constantly (SourcePos. 1 2))
           show-token (constantly "a")]
       (is (parser-result? \a (token consume nxtpos show-token) "a"))
-      (is (thrown-with-msg? RuntimeException #"Found unexpected a"
+      (is (thrown-with-msg? RuntimeException #"Unexpected a"
             (run (token dont-consume nxtpos show-token) "a"))))))
 
 (deftest test-many
@@ -89,3 +89,14 @@
          "a"
          "b"
          "c")))
+
+(deftest test-eof
+  (testing "parser succeeds, returns nil when no more input left"
+    (is (parser-result? nil (eof) ""))
+    (is (parser-result? nil (>> (char \a) (eof)) "a")))
+
+  (testing "parser fails with message when input if left"
+    (is (thrown-with-msg? RuntimeException #"Expected end of input"
+          (run (eof) "a")))
+    (is (thrown-with-msg? RuntimeException #"Expected end of input"
+          (run (>> (char \a) (eof)) "ab")))))
