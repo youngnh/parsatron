@@ -55,7 +55,9 @@
 
 (defmacro defparser [name args & body]
   `(defn ~name ~args
-     (>> ~@body)))
+     (fn [state# cok# cerr# eok# eerr#]
+       (let [p# (>> ~@body)]
+         (p# state# cok# cerr# eok# eerr#)))))
 
 (defmacro >>
   ([m] m)

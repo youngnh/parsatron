@@ -1,4 +1,5 @@
-(ns parsatron.languages.bf)
+(ns parsatron.languages.bf
+  (:use [the.parsatron]))
 
 (defparser instruction []
   (choice (char \>)
