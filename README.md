@@ -26,7 +26,8 @@ be defined as follows:
               (between (char \[) (char \]) (many (instruction)))))
 
     (defparser bf []
-      (many (instruction)))
+      (many (instruction))
+      (eof))
 
 The `defparser` forms create new parsers that you can combine into other, more
 complex parsers. As you can see in this example, those parsers can be recursive.
@@ -55,7 +56,7 @@ Parsatron offers you facilities for interacting with and operating on the things
 you parse via sequencing of multiple parsers and binding their results. The
 macros `>>` and `p-let` embody this facility.
 
-As an example, bencoded strings, are prefixed by their length and a colon:
+As an example, [bencoded strings](http://en.wikipedia.org/wiki/Bencode) are prefixed by their length and a colon:
 
     (defparser ben-string []
       (p-let [length (integer)]
