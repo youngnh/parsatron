@@ -41,19 +41,19 @@
 (defn nxt [p q]
   (fn [state cok cerr eok eerr]
     (letfn [(pcok [item state]
-                  (q state cok cerr cok cerr))
+              (q state cok cerr cok cerr))
             (peok [item state]
-                  (q state cok cerr eok eerr))]
+              (q state cok cerr eok eerr))]
       (p state pcok cerr peok eerr))))
 
 (defn bind [p f]
   (fn [state cok cerr eok eerr]
     (letfn [(pcok [item state]
-                  (let [q (f item)]
-                    (q state cok cerr cok cerr)))
+              (let [q (f item)]
+                (q state cok cerr cok cerr)))
             (peok [item state]
-                  (let [q (f item)]
-                    (q state cok cerr eok eerr)))]
+              (let [q (f item)]
+                (q state cok cerr eok eerr)))]
       (p state pcok cerr peok eerr))))
 
 (defmacro defparser [name args & body]
@@ -82,9 +82,9 @@
 (defn either [p q]
   (fn [state cok cerr eok eerr]
     (letfn [(peerr [err-from-p]
-                   (letfn [(qeerr [err-from-q]
-                                  (eerr (merge-errors err-from-p err-from-q)))]
-                     (q state cok cerr eok qeerr)))]
+              (letfn [(qeerr [err-from-q]
+                        (eerr (merge-errors err-from-p err-from-q)))]
+                (q state cok cerr eok qeerr)))]
       (p state cok cerr eok peerr))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -104,14 +104,14 @@
 (defn many [p]
   (fn [state cok cerr eok eerr]
     (letfn [(many-err [_ _]
-                      (throw (RuntimeException. "Combinator '*' is applied to a parser that accepts an empty string")))
+              (throw (RuntimeException. "Combinator '*' is applied to a parser that accepts an empty string")))
             (pcok [coll]
-                  (fn [item state]
-                    (letfn [(exit-cok [_]
-                                      (cok (conj coll item) state))]
-                      (p state (pcok (conj coll item)) cerr many-err exit-cok))))
+              (fn [item state]
+                (letfn [(exit-cok [_]
+                          (cok (conj coll item) state))]
+                  (p state (pcok (conj coll item)) cerr many-err exit-cok))))
             (peerr [_]
-                   (eok [] state))]
+              (eok [] state))]
       (p state (pcok []) cerr many-err peerr))))
 
 (defn times [n p]
@@ -119,12 +119,12 @@
     (always [])
     (fn [state cok cerr eok eerr]
       (letfn [(pcok [item state]
-                    (let [q (times (dec n) p)]
-                      (letfn [(qcok [items state]
-                                    (cok (cons item items) state))]
-                        (q state qcok cerr qcok eerr))))
+                (let [q (times (dec n) p)]
+                  (letfn [(qcok [items state]
+                            (cok (cons item items) state))]
+                    (q state qcok cerr qcok eerr))))
               (peok [item state]
-                    (eok (repeat n item) state))]
+                (eok (repeat n item) state))]
         (p state pcok cerr peok eerr)))))
 
 (defn choice [& parsers]
@@ -164,30 +164,30 @@
 
 (defn between [open close p]
   (let->> [_ open
-          x p
-          _ close]
-         (always x)))
+           x p
+           _ close]
+    (always x)))
 
 (defn many1 [p]
   (let->> [x p
-          xs (many p)]
-         (always (cons x xs))))
+           xs (many p)]
+    (always (cons x xs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; run parsers
 (defn run-parser [p state]
   (letfn [(cok [item _]
-               (Ok. item))
+            (Ok. item))
           (cerr [err]
-                (Err. (show-error err)))
+            (Err. (show-error err)))
           (eok [item _]
-               (Ok. item))
+            (Ok. item))
           (eerr [err]
-                (Err. (show-error err)))]
+            (Err. (show-error err)))]
     (p state cok cerr eok eerr)))
 
 (defn run [p input]
   (let [result (run-parser p (InputState. input (SourcePos. 1 1)))]
     (condp = (class result)
-        Ok (:item result)
-        Err (throw (RuntimeException. (:errmsg result))))))
+      Ok (:item result)
+      Err (throw (RuntimeException. (:errmsg result))))))
