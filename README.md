@@ -54,16 +54,16 @@ ethos. Look for expansion in this area.
 Beyond just verifying that a string is a valid member of some language, The
 Parsatron offers you facilities for interacting with and operating on the things
 you parse via sequencing of multiple parsers and binding their results. The
-macros `>>` and `p-let` embody this facility.
+macros `>>` and `let->>` embody this facility.
 
 As an example, [bencoded strings](http://en.wikipedia.org/wiki/Bencode) are prefixed by their length and a colon:
 
     (defparser ben-string []
-      (p-let [length (integer)]
+      (let->> [length (integer)]
         (>> (char \:)
             (times length (any-char)))))
 
-`p-let` allows you to capture and name the result of a parser so it's value may
+`let->>` allows you to capture and name the result of a parser so it's value may
 be used later. `>>` is very similar to Clojure's `do` in that it executes it's
 forms in order, but "throws away" all but the value of the last form.
 

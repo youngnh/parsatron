@@ -67,11 +67,11 @@
   ([m n] `(nxt ~m ~n))
   ([m n & ms] `(nxt ~m (>> ~n ~@ms))))
 
-(defmacro p-let [[& bindings] & body]
+(defmacro let->> [[& bindings] & body]
   (let [[bind-form p] (take 2 bindings)]
     (if (= 2 (count bindings))
       `(bind ~p (fn [~bind-form] ~@body))
-      `(bind ~p (fn [~bind-form] (p-let ~(drop 2 bindings) ~@body))))))
+      `(bind ~p (fn [~bind-form] (let->> ~(drop 2 bindings) ~@body))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; m+
@@ -163,13 +163,13 @@
   (satisfy #(Character/isLetter %)))
 
 (defn between [open close p]
-  (p-let [_ open
+  (let->> [_ open
           x p
           _ close]
          (always x)))
 
 (defn many1 [p]
-  (p-let [x p
+  (let->> [x p
           xs (many p)]
          (always (cons x xs))))
 
