@@ -31,25 +31,18 @@
     (is (parser-result? 5 (either (never) (always 5)) "")))
 
   (testing "when neither succeed, errors are merged"
-    (is (thrown-with-msg? RuntimeException #"Unexpected c, Unexpected c"
+    (is (thrown-with-msg? RuntimeException #"Unexpected token 'c', Unexpected token 'c'"
           (run (either (char \a) (char \b)) "c")))))
 
 (deftest test-token
   (testing "throws error on empty input"
-    (let [consume? (constantly true)
-          nxtpos (constantly (SourcePos. 1 2))
-          show-token (constantly "a")]
-      (is (thrown-with-msg? RuntimeException #"Input is empty"
-            (run (token consume? nxtpos show-token) "")))))
+    (is (thrown-with-msg? RuntimeException #"Unexpected end of input"
+          (run (token (constantly true)) ""))))
 
   (testing "consume? determines parser's behavior, show-f used in error message"
-    (let [consume (constantly true)
-          dont-consume (constantly false)
-          nxtpos (constantly (SourcePos. 1 2))
-          show-token (constantly "a")]
-      (is (parser-result? \a (token consume nxtpos show-token) "a"))
-      (is (thrown-with-msg? RuntimeException #"Unexpected a"
-            (run (token dont-consume nxtpos show-token) "a"))))))
+    (is (parser-result? \a (token (constantly true)) "a"))
+    (is (thrown-with-msg? RuntimeException #"Unexpected token 'a'"
+          (run (token (constantly false)) "a")))))
 
 (deftest test-many
   (testing "throws an exception if parser does not consume"
@@ -70,7 +63,7 @@
     (is (parser-result? [] (times 0 (char \a)) "")))
 
   (testing "throws an error (from underlying parser) if fewer than specified"
-    (are [input] (thrown-with-msg? RuntimeException #"Input is empty"
+    (are [input] (thrown-with-msg? RuntimeException #"Unexpected end of input"
                    (run (times 3 (char \a)) input))
          ""
          "a"

@@ -9,6 +9,13 @@
 (defrecord Err [errmsg])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; position
+(defn inc-sourcepos [{:keys [line column]} c]
+  (if (= c \newline)
+    (SourcePos. (inc line) 1)
+    (SourcePos. line (inc column))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; errors
 (defprotocol ShowableError
   (show-error [this]))
@@ -89,17 +96,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; token
-(defn token [consume? nextpos-f show-f]
+(defn token [consume?]
   (fn [{:keys [input pos] :as state} cok cerr eok eerr]
-    (if-let [s (seq input)]
-      (let [item (first s)
-            rest-of-input (next s)]
-        (if (consume? item)
-          (let [newpos (nextpos-f pos item rest-of-input)
-                newstate (InputState. rest-of-input newpos)]
-            (cok item newstate))
-          (eerr (unexpect-error (show-f item) pos))))
-      (eerr (unexpect-error "Input is empty" pos)))))
+    (if-let [tok (first input)]
+      (if (consume? tok)
+        (cok tok (InputState. (rest input) (inc-sourcepos pos tok)))
+        (eerr (unexpect-error (str "token '" tok "'") pos)))
+      (eerr (unexpect-error "end of input" pos)))))
 
 (defn many [p]
   (fn [state cok cerr eok eerr]
@@ -139,28 +142,17 @@
       (eok nil state)
       (eerr (expect-error "end of input" pos)))))
 
-(defn updatepos-char [{:keys [line column]} c]
-  (case c
-        \newline (SourcePos. (inc line) 1)
-        (SourcePos. line (inc column))))
-
-(defn satisfy [pred]
-  (token pred
-         (fn [pos c cs]
-           (updatepos-char pos c))
-         str))
-
 (defn char [c]
-  (satisfy #(= c %)))
+  (token #(= c %)))
 
 (defn any-char []
-  (satisfy (constantly true)))
+  (token (constantly true)))
 
 (defn digit []
-  (satisfy #(Character/isDigit %)))
+  (token #(Character/isDigit %)))
 
 (defn letter []
-  (satisfy #(Character/isLetter %)))
+  (token #(Character/isLetter %)))
 
 (defn between [open close p]
   (let->> [_ open
