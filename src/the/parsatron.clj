@@ -104,17 +104,15 @@
       (eerr (unexpect-error "end of input" pos)))))
 
 (defn many [p]
-  (fn [state cok cerr eok eerr]
-    (letfn [(many-err [_ _]
-              (throw (RuntimeException. "Combinator '*' is applied to a parser that accepts an empty string")))
-            (pcok [coll]
-              (fn [item state]
-                (letfn [(exit-cok [_]
-                          (cok (conj coll item) state))]
-                  (p state (pcok (conj coll item)) cerr many-err exit-cok))))
-            (peerr [_]
-              (eok [] state))]
-      (p state (pcok []) cerr many-err peerr))))
+  (letfn [(many-err [_ _]
+            (throw (RuntimeException. "Combinator '*' is applied to a parser that accepts an empty string")))
+          (safe-p [state cok cerr eok eerr]
+            (p state cok cerr many-err eerr))]
+    (either
+     (let->> [x safe-p
+              xs (many safe-p)]
+       (always (cons x xs)))
+     (always []))))
 
 (defn times [n p]
   (if (= n 0)
