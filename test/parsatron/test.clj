@@ -35,6 +35,15 @@
     (is (thrown-with-msg? RuntimeException #"Unexpected token 'c', Unexpected token 'c'"
           (run (either (char \a) (char \b)) "c")))))
 
+(deftest test-attempt
+  (testing "success returns value of p"
+    (is (parser-result? \a (attempt (char \a)) "a")))
+
+  (testing "failure is same as never"
+    (is (thrown? RuntimeException (run (attempt (char \a)) "b")))
+    (is (parser-result? \c (either (attempt (>> (char \a) (char \b)))
+                                   (>> (char \a) (char \c))) "ac"))))
+
 (deftest test-token
   (testing "throws error on empty input"
     (is (thrown-with-msg? RuntimeException #"Unexpected end of input"
@@ -73,6 +82,13 @@
   (testing "returns a list with the results"
     (is (parser-result? [\a \a \a] (times 3 (char \a)) "aaa"))
     (is (parser-result? [5 5 5] (times 3 (always 5)) ""))))
+
+(deftest test-lookahead
+  (testing "returns value of p on success"
+    (is (parser-result? \a (lookahead (char \a)) "a")))
+
+  (testing "does not consume input on success"
+    (is (parser-result? \a (>> (lookahead (char \a)) (char \a)) "a"))))
 
 (deftest test-choice
   (testing "choice with no choices throws an exception"

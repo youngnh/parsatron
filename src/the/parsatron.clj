@@ -45,14 +45,6 @@
   (fn [state cok cerr eok eerr]
     (eok x state)))
 
-(defn nxt [p q]
-  (fn [state cok cerr eok eerr]
-    (letfn [(pcok [item state]
-              (q state cok cerr cok cerr))
-            (peok [item state]
-              (q state cok cerr eok eerr))]
-      (p state pcok cerr peok eerr))))
-
 (defn bind [p f]
   (fn [state cok cerr eok eerr]
     (letfn [(pcok [item state]
@@ -62,6 +54,9 @@
               (let [q (f item)]
                 (q state cok cerr eok eerr)))]
       (p state pcok cerr peok eerr))))
+
+(defn nxt [p q]
+  (bind p (fn [_] q)))
 
 (defmacro defparser [name args & body]
   `(defn ~name ~args
@@ -93,6 +88,10 @@
                         (eerr (merge-errors err-from-p err-from-q)))]
                 (q state cok cerr eok qeerr)))]
       (p state cok cerr eok peerr))))
+
+(defn attempt [p]
+  (fn [state cok cerr eok eerr]
+    (p state cok eerr eok eerr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; token
@@ -129,6 +128,12 @@
               (peok [item state]
                 (eok (repeat n item) state))]
         (p state pcok cerr peok eerr)))))
+
+(defn lookahead [p]
+  (fn [state cok cerr eok eerr]
+    (letfn [(ok [item _]
+              (eok item state))]
+      (p state ok cerr eok eerr))))
 
 (defn choice [& parsers]
   (if (empty? parsers)
