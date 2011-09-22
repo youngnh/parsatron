@@ -1,4 +1,5 @@
 (ns parsatron.languages.bencode
+  (:refer-clojure :exclude [char])
   (:use [the.parsatron]))
 
 (declare ben-value)

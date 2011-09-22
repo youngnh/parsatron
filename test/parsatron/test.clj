@@ -1,4 +1,5 @@
 (ns parsatron.test
+  (:refer-clojure :exclude [char])
   (:use [the.parsatron]
         [clojure.test])
   (:import (the.parsatron SourcePos)))

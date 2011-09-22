@@ -1,4 +1,5 @@
 (ns parsatron.languages.test-bencode
+  (:refer-clojure :exclude [char])
   (:use [the.parsatron]
         [parsatron.languages.bencode]
         [clojure.test]))

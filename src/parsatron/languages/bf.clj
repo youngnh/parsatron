@@ -1,4 +1,5 @@
 (ns parsatron.languages.bf
+  (:refer-clojure :exclude [char])
   (:use [the.parsatron]))
 
 (defparser instruction []

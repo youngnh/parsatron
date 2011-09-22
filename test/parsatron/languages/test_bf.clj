@@ -1,4 +1,5 @@
 (ns parsatron.languages.test-bf
+  (:refer-clojure :exclude [char])
   (:use [the.parsatron]
         [parsatron.languages.bf]
         [clojure.test]))
