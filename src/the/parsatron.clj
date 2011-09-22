@@ -10,7 +10,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; position
-(defn inc-sourcepos [{:keys [line column]} c]
+(defn inc-sourcepos
+  "Increment the source position by a single character, c. On newline,
+   increments the SourcePos's line number and resets the column, on
+   all other characters, increments the column"
+  [{:keys [line column]} c]
   (if (= c \newline)
     (SourcePos. (inc line) 1)
     (SourcePos. line (inc column))))
@@ -41,11 +45,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; m
-(defn always [x]
+(defn always
+  "A parser that always succeeds with the value given and consumes no
+   input"
+  [x]
   (fn [state cok cerr eok eerr]
     (eok x state)))
 
-(defn bind [p f]
+(defn bind
+  "Parse p, and then q. The function f must be of one argument, it
+   will be given the value of p and must return the q to follow p"
+  [p f]
   (fn [state cok cerr eok eerr]
     (letfn [(pcok [item state]
               (let [q (f item)]
@@ -55,21 +65,30 @@
                 (q state cok cerr eok eerr)))]
       (p state pcok cerr peok eerr))))
 
-(defn nxt [p q]
+(defn nxt
+  "Parse q and then q, returning q's value and discarding p's"
+  [p q]  
   (bind p (fn [_] q)))
 
-(defmacro defparser [name args & body]
+(defmacro defparser
+  "Defines a new parser. Parsers are simply functions that accept the
+   5 arguments state, cok, cerr, eok, eerr but this macro takes care
+   of writing that ceremony for you and wraps the body in a >>"
+  [name args & body]
   `(defn ~name ~args
      (fn [state# cok# cerr# eok# eerr#]
        (let [p# (>> ~@body)]
          (p# state# cok# cerr# eok# eerr#)))))
 
 (defmacro >>
+  "Expands into nested nxt forms"
   ([m] m)
   ([m n] `(nxt ~m ~n))
   ([m n & ms] `(nxt ~m (>> ~n ~@ms))))
 
-(defmacro let->> [[& bindings] & body]
+(defmacro let->>
+  "Expands into nested bind forms"
+  [[& bindings] & body]
   (let [[bind-form p] (take 2 bindings)]
     (if (= 2 (count bindings))
       `(bind ~p (fn [~bind-form] ~@body))
@@ -77,11 +96,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; m+
-(defn never []
+(defn never
+  "A parser that always fails, consuming no input"
+  []
   (fn [state cok cerr eok eerr]
     (eerr (unknown-error state))))
 
-(defn either [p q]
+(defn either
+  "A parser that tries p, upon success, returning its value, and upon
+   failure (if no input was consumed) tries to parse q"
+  [p q]
   (fn [state cok cerr eok eerr]
     (letfn [(peerr [err-from-p]
               (letfn [(qeerr [err-from-q]
@@ -89,13 +113,20 @@
                 (q state cok cerr eok qeerr)))]
       (p state cok cerr eok peerr))))
 
-(defn attempt [p]
+(defn attempt
+  "A parser that will attempt to parse p, and upon failure never
+   consume any input"  
+  [p]
   (fn [state cok cerr eok eerr]
     (p state cok eerr eok eerr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; token
-(defn token [consume?]
+(defn token
+  "Consume a single item from the head of the input if (consume? item)
+   is not nil. This parser will fail to consume if either the consume?
+   test returns nil or if the input is empty"
+  [consume?]
   (fn [{:keys [input pos] :as state} cok cerr eok eerr]
     (if-let [tok (first input)]
       (if (consume? tok)
@@ -103,7 +134,11 @@
         (eerr (unexpect-error (str "token '" tok "'") pos)))
       (eerr (unexpect-error "end of input" pos)))))
 
-(defn many [p]
+(defn many
+  "Consume zero or more p. A RuntimeException will be thrown if this
+   combinator is applied to a parser that accepts the empty string, as
+   that would cause the parser to loop forever"
+  [p]
   (letfn [(many-err [_ _]
             (throw (RuntimeException. "Combinator '*' is applied to a parser that accepts an empty string")))
           (safe-p [state cok cerr eok eerr]
@@ -114,7 +149,9 @@
        (always (cons x xs)))
      (always []))))
 
-(defn times [n p]
+(defn times
+  "Consume exactly n number of p"
+  [n p]
   (if (= n 0)
     (always [])
     (fn [state cok cerr eok eerr]
@@ -127,50 +164,75 @@
                 (eok (repeat n item) state))]
         (p state pcok cerr peok eerr)))))
 
-(defn lookahead [p]
+(defn lookahead
+  "A parser that upon success consumes no input, but returns what was
+   parsed"
+  [p]
   (fn [state cok cerr eok eerr]
     (letfn [(ok [item _]
               (eok item state))]
       (p state ok cerr eok eerr))))
 
-(defn choice [& parsers]
+(defn choice
+  "A varargs version of either that tries each given parser in turn,
+   returning the value of the first one that succeeds"
+  [& parsers]
   (if (empty? parsers)
     (never)
     (let [p (first parsers)]
       (either p (apply choice (rest parsers))))))
 
-(defn eof []
+(defn eof
+  "A parser to detect the end of input. If there is nothing more to
+   consume from the underlying input, this parser suceeds with a nil
+   value, otherwise it fails"
+  []
   (fn [{:keys [input pos] :as state} cok cerr eok eerr]
     (if (empty? input)
       (eok nil state)
       (eerr (expect-error "end of input" pos)))))
 
-(defn char [c]
+(defn char
+  "Consume the given character"
+  [c]
   (token #(= c %)))
 
-(defn any-char []
-  (token (constantly true)))
+(defn any-char
+  "Consume any character"
+  []
+  (token #(char? %)))
 
-(defn digit []
+(defn digit
+  "Consume a digit [0-9] character"
+  []
   (token #(Character/isDigit %)))
 
-(defn letter []
+(defn letter
+  "Consume a letter [a-zA-Z] character"
+  []
   (token #(Character/isLetter %)))
 
-(defn between [open close p]
+(defn between
+  "Parse p after parsing open and before parsing close, returning the
+   value of p and discarding the values of open and close"
+  [open close p]
   (let->> [_ open
            x p
            _ close]
     (always x)))
 
-(defn many1 [p]
+(defn many1
+  "Consume 1 or more p"
+  [p]
   (let->> [x p
            xs (many p)]
     (always (cons x xs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; run parsers
-(defn run-parser [p state]
+(defn run-parser
+  "Execute a parser p, given some state. Returns Ok or Err"
+  [p state]
   (letfn [(cok [item _]
             (Ok. item))
           (cerr [err]
@@ -181,7 +243,12 @@
             (Err. (show-error err)))]
     (p state cok cerr eok eerr)))
 
-(defn run [p input]
+(defn run
+  "Run a parser p over some input. The input can be a string or a seq
+   of tokens, if the parser produces an error, its message is wrapped
+   in a RuntimeException and thrown, and if the parser succeeds, its
+   value is returned"
+  [p input]
   (let [result (run-parser p (InputState. input (SourcePos. 1 1)))]
     (condp = (class result)
       Ok (:item result)
