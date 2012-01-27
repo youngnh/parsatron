@@ -66,7 +66,7 @@
       (p state pcok cerr peok eerr))))
 
 (defn nxt
-  "Parse q and then q, returning q's value and discarding p's"
+  "Parse p and then q, returning q's value and discarding p's"
   [p q]  
   (bind p (fn [_] q)))
 
