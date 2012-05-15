@@ -5,6 +5,7 @@
 (defrecord InputState [input pos])
 (defrecord SourcePos [line column])
 
+(defrecord Cont [fn])
 (defrecord Ok [item])
 (defrecord Err [errmsg])
 
@@ -45,12 +46,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; m
+
 (defn always
   "A parser that always succeeds with the value given and consumes no
    input"
   [x]
   (fn [state cok cerr eok eerr]
-    (eok x state)))
+    (Cont. #(eok x state))))
 
 (defn bind
   "Parse p, and then q. The function f must be of one argument, it
@@ -59,15 +61,15 @@
   (fn [state cok cerr eok eerr]
     (letfn [(pcok [item state]
               (let [q (f item)]
-                (q state cok cerr cok cerr)))
+                (Cont. #(q state cok cerr cok cerr))))
             (peok [item state]
               (let [q (f item)]
-                (q state cok cerr eok eerr)))]
-      (p state pcok cerr peok eerr))))
+                (Cont. #(q state cok cerr eok eerr))))]
+      (Cont. #(p state pcok cerr peok eerr)))))
 
 (defn nxt
   "Parse p and then q, returning q's value and discarding p's"
-  [p q]  
+  [p q]
   (bind p (fn [_] q)))
 
 (defmacro defparser
@@ -78,7 +80,7 @@
   `(defn ~name ~args
      (fn [state# cok# cerr# eok# eerr#]
        (let [p# (>> ~@body)]
-         (p# state# cok# cerr# eok# eerr#)))))
+         (Cont. #(p# state# cok# cerr# eok# eerr#))))))
 
 (defmacro >>
   "Expands into nested nxt forms"
@@ -100,7 +102,7 @@
   "A parser that always fails, consuming no input"
   []
   (fn [state cok cerr eok eerr]
-    (eerr (unknown-error state))))
+    (Cont. #(eerr (unknown-error state)))))
 
 (defn either
   "A parser that tries p, upon success, returning its value, and upon
@@ -109,16 +111,16 @@
   (fn [state cok cerr eok eerr]
     (letfn [(peerr [err-from-p]
               (letfn [(qeerr [err-from-q]
-                        (eerr (merge-errors err-from-p err-from-q)))]
-                (q state cok cerr eok qeerr)))]
-      (p state cok cerr eok peerr))))
+                        (Cont. #(eerr (merge-errors err-from-p err-from-q))))]
+                (Cont. #(q state cok cerr eok qeerr))))]
+      (Cont. #(p state cok cerr eok peerr)))))
 
 (defn attempt
   "A parser that will attempt to parse p, and upon failure never
-   consume any input"  
+   consume any input"
   [p]
   (fn [state cok cerr eok eerr]
-    (p state cok eerr eok eerr)))
+    (Cont. #(p state cok eerr eok eerr))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; token
@@ -130,9 +132,9 @@
   (fn [{:keys [input pos] :as state} cok cerr eok eerr]
     (if-let [tok (first input)]
       (if (consume? tok)
-        (cok tok (InputState. (rest input) (inc-sourcepos pos tok)))
-        (eerr (unexpect-error (str "token '" tok "'") pos)))
-      (eerr (unexpect-error "end of input" pos)))))
+        (Cont. #(cok tok (InputState. (rest input) (inc-sourcepos pos tok))))
+        (Cont. #(eerr (unexpect-error (str "token '" tok "'") pos))))
+      (Cont. #(eerr (unexpect-error "end of input" pos))))))
 
 (defn many
   "Consume zero or more p. A RuntimeException will be thrown if this
@@ -158,11 +160,11 @@
       (letfn [(pcok [item state]
                 (let [q (times (dec n) p)]
                   (letfn [(qcok [items state]
-                            (cok (cons item items) state))]
-                    (q state qcok cerr qcok eerr))))
+                            (Cont. #(cok (cons item items) state)))]
+                    (Cont. #(q state qcok cerr qcok eerr)))))
               (peok [item state]
-                (eok (repeat n item) state))]
-        (p state pcok cerr peok eerr)))))
+                (Cont. #(eok (repeat n item) state)))]
+        (Cont. #(p state pcok cerr peok eerr))))))
 
 (defn lookahead
   "A parser that upon success consumes no input, but returns what was
@@ -170,8 +172,8 @@
   [p]
   (fn [state cok cerr eok eerr]
     (letfn [(ok [item _]
-              (eok item state))]
-      (p state ok cerr eok eerr))))
+              (Cont. #(eok item state)))]
+      (Cont. #(p state ok cerr eok eerr)))))
 
 (defn choice
   "A varargs version of either that tries each given parser in turn,
@@ -189,8 +191,8 @@
   []
   (fn [{:keys [input pos] :as state} cok cerr eok eerr]
     (if (empty? input)
-      (eok nil state)
-      (eerr (expect-error "end of input" pos)))))
+      (Cont. #(eok nil state))
+      (Cont. #(eerr (expect-error "end of input" pos))))))
 
 (defn char
   "Consume the given character"
@@ -249,7 +251,9 @@
    in a RuntimeException and thrown, and if the parser succeeds, its
    value is returned"
   [p input]
-  (let [result (run-parser p (InputState. input (SourcePos. 1 1)))]
-    (condp = (class result)
-      Ok (:item result)
-      Err (throw (RuntimeException. (:errmsg result))))))
+  (let [state (InputState. input (SourcePos. 1 1))]
+    (loop [result (run-parser p state)]
+      (condp = (class result)
+        Cont (recur ((:fn result)))
+        Ok (:item result)
+        Err (throw (RuntimeException. (:errmsg result)))))))
