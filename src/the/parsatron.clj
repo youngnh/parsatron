@@ -80,11 +80,11 @@
     (letfn [(pcok [item state]
               (sequentially
                (fn [q] (Continue. #(q state cok cerr cok cerr)))
-               (Continue. #(f item))))
+               (f item)))
             (peok [item state]
               (sequentially
                (fn [q] (Continue. #(q state cok cerr eok eerr)))
-               (Continue. #(f item))))]
+               (f item)))]
       (Continue. #(p state pcok cerr peok eerr)))))
 
 (defn nxt
