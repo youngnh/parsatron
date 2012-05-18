@@ -66,7 +66,12 @@
     (is (parser-result? [\a \a \b \a \b \b]
                         (many (either (char \a)
                                       (char \b)))
-                        "aababbc"))))
+                        "aababbc")))
+
+  (testing "does not blow the stack"
+    (is (parser-result? (take 1000 (repeat \a))
+                        (many (char \a))
+                        (apply str (take 1000 (repeat \a)))))))
 
 (deftest test-times
   (testing "0 times returns [], and does not consume"
