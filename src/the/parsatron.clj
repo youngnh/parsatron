@@ -234,6 +234,12 @@
   []
   (token #(Character/isLetter %)))
 
+(defn string
+  "Consume the given string"
+  [s]
+  (reduce nxt (concat (map char s)
+                      (list (always s)))))
+
 (defn between
   "Parse p after parsing open and before parsing close, returning the
    value of p and discarding the values of open and close"
