@@ -143,6 +143,14 @@
     (Continue. #(p state cok eerr eok eerr))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defn lineno
+  "A parser that returns the current line number. It consumes no input"
+  []
+  (fn [state _ _ eok _]
+    (eok (get-in state [:pos :line]) state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; token
 (defn token
   "Consume a single item from the head of the input if (consume? item)
