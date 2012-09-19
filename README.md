@@ -71,7 +71,7 @@ forms in order, but "throws away" all but the value of the last form.
 
 ## Installation
 
-You can use The Parsatron by including `[the/parsatron "0.0.1"]` in your `project.clj` dependencies.
+You can use The Parsatron by including `[the/parsatron "0.0.3"]` in your `project.clj` dependencies.
 It's available for download from Clojars.
 
 ## License

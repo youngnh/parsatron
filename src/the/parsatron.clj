@@ -235,12 +235,12 @@
 (defn digit
   "Consume a digit [0-9] character"
   []
-  (token #(Character/isDigit %)))
+  (token #(Character/isDigit ^Character %)))
 
 (defn letter
   "Consume a letter [a-zA-Z] character"
   []
-  (token #(Character/isLetter %)))
+  (token #(Character/isLetter ^Character %)))
 
 (defn string
   "Consume the given string"
@@ -288,4 +288,4 @@
   (let [result (run-parser p (InputState. input (SourcePos. 1 1)))]
     (condp instance? result
       Ok (:item result)
-      Err (throw (RuntimeException. (:errmsg result))))))
+      Err (throw (RuntimeException. ^String (:errmsg result))))))
