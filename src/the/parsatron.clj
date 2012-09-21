@@ -143,12 +143,27 @@
     (Continue. #(p state cok eerr eok eerr))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; interacting with the parser's state
+
+(defn extract
+  "Extract information from the Parser's current state. f should be a
+   fn of one argument, the parser's current state, and any value that
+   it deems worthy of returning will be returned by the entire parser.
+   No input is consumed by this parser, and the state itself is not
+   altered."
+  [f]
+  (fn [state _ _ eok _]
+    (eok (f state) state)))
+
+(defn examine
+  "Return the Parser's current state"
+  []
+  (extract identity))
 
 (defn lineno
   "A parser that returns the current line number. It consumes no input"
   []
-  (fn [state _ _ eok _]
-    (eok (get-in state [:pos :line]) state)))
+  (extract (comp :line :pos)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; token
