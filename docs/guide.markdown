@@ -388,9 +388,6 @@ The three parsers we're giving to `between` are:
 Once you're comfortable with this example, it's time to move on to the next
 stage of parsing: building and returning values.
 
-
-
-
 Returning Values
 ----------------
 
