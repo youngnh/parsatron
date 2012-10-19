@@ -138,6 +138,21 @@ that we can use the parsatron to parse more than just strings:
     (run (any-char) [1 2 3])
     ; RuntimeException...
 
+### except-char
+
+`except-char` parses the same as `any-char` except it specifically excludes the
+items you specify. It corresponds to the `[^abc]` regex operator to parse 
+anything except the characters `a`, `b` & `c`:
+
+    (run (any-char) "cat")
+    ; \c
+
+    (run (except-char "c") "at")
+    ; \a
+
+    (run (except-char "c) "cat"))
+    ; RuntimeException
+
 ### letter and digit
 
 `letter` and `digits` create parsers that parse and return letter characters
@@ -373,6 +388,9 @@ The three parsers we're giving to `between` are:
 Once you're comfortable with this example, it's time to move on to the next
 stage of parsing: building and returning values.
 
+
+
+
 Returning Values
 ----------------
 
@@ -590,3 +608,41 @@ a `>>` inside it, just bind the value to a disposable name, like `_`:
 
     (run (float) "1.0400000")
     ; 1.04
+
+### C-style escaped strings
+
+C-style strings are all characters between two `"` characters except when:
+
+- the `"` is preceded by a `\` character, it means the literal `"` and not
+termination of the string
+- various escape characters like `\t` (tab) `\r` (carriage-return) `\n` (newline)
+
+Combining `between` and `except-char` gives you the basic feature:
+
+    ; strings should be anything between two '"' characters, except if it is
+    ; preceded by a single '\' character, then it means the '"' is part of the 
+    ; string:
+    ; "qwerty" is valid
+    ; "qwe\"rty" is valid
+
+    (defparser parse-string [] 
+      (between (char \") 
+               (char \") 
+               (many (except-char "\""))))
+
+    (run parse-string "\"aoeu\"")
+    ; (\a \o \e \u)
+
+To handle escapes properly:
+
+    (defparser string-char []
+      (choice (attempt (>> (char \\) (char \\) (always \\)))
+              (attempt (>> (char \\) (char \") (always \")))
+              (attempt (>> (char \\) (char \n) (always \newline)))
+              (attempt (>> (char \\) (char \t) (always \tab)))
+              ; other cases (maybe unicode escapes...)
+              (except-char ("\""))))
+
+    (run (string-char) "qwer\ty)
+    ; [\q \w \e \r \tab \y]
+
