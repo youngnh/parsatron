@@ -299,7 +299,7 @@ returned.
     (def number (many1 (digit)))
     (def word (many1 (letter)))
 
-    (def number-or-word (choice number word))
+    (def number-or-word (either number word))
 
     (run number-or-word "dog")
     ; (\d \o \g)
