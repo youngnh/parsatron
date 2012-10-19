@@ -138,6 +138,21 @@ that we can use the parsatron to parse more than just strings:
     (run (any-char) [1 2 3])
     ; RuntimeException...
 
+### except-char
+
+`except-char` parses the same as `any-char` except it specifically excludes the
+items you specify. It corresponds to the `[^abc]` regex operator to parse 
+anything except the characters `a`, `b` & `c`:
+
+    (run (any-char) "cat")
+    ; \c
+
+    (run (except-char "c") "at")
+    ; \a
+
+    (run (except-char "c) "cat"))
+    ; RuntimeException
+
 ### letter and digit
 
 `letter` and `digits` create parsers that parse and return letter characters
@@ -290,15 +305,16 @@ one item.  It's like `+` in a regular expression instead of `*`.
     (run number-parser1 "100")
     ; (\1 \0 \0)
 
-### choice
+### either
 
-`choice` takes one or more parsers and creates a parser that will try each of
-them in order until one parses successfully, and return its result.  For example:
+`either` is a parser that takes two parsers. If the first one succeeds its 
+value is returned, if it fails, the second parser is tried and it's value is 
+returned.
 
     (def number (many1 (digit)))
     (def word (many1 (letter)))
 
-    (def number-or-word (choice number word))
+    (def number-or-word (either number word))
 
     (run number-or-word "dog")
     ; (\d \o \g)
@@ -306,9 +322,37 @@ them in order until one parses successfully, and return its result.  For example
     (run number-or-word "42")
     ; (\4 \2)
 
+    (run number-or-word "@#$")
+    ; RuntimeException ...
+
+### choice
+
+`choice` takes one or more parsers and creates a parser that will try each of
+them in order until one parses successfully, and return its result. It is 
+different from `either` in that it may take more than two parsers while 
+`either` can only take 2.
+
+For example:
+
+    (def number (many1 (digit)))
+    (def word (many1 (letter)))
+    (def other (many1 (any-char)))
+
+    (def number-or-word-or-anything (choice number word other))
+
+    (run number-or-word-or-anything "dog")
+    ; (\d \o \g)
+
+    (run number-or-word-or-anything "42")
+    ; (\4 \2)
+
+    (run number-or-word-or-anything "!@#$")
+    ; (\! \@ \# \$)
+
 Notice that we used `many1` when defining the parsers `number` and `word`.  If
 we had used `many` then this would always parse as a number because if there
 were no digits it would successfully return an empty sequence.
+
 
 ### between
 
@@ -561,3 +605,41 @@ a `>>` inside it, just bind the value to a disposable name, like `_`:
 
     (run (float) "1.0400000")
     ; 1.04
+
+### C-style escaped strings
+
+C-style strings are all characters between two `"` characters except when:
+
+- the `"` is preceded by a `\` character, it means the literal `"` and not
+termination of the string
+- various escape characters like `\t` (tab) `\r` (carriage-return) `\n` (newline)
+
+Combining `between` and `except-char` gives you the basic feature:
+
+    ; strings should be anything between two '"' characters, except if it is
+    ; preceded by a single '\' character, then it means the '"' is part of the 
+    ; string:
+    ; "qwerty" is valid
+    ; "qwe\"rty" is valid
+
+    (defparser parse-string [] 
+      (between (char \") 
+               (char \") 
+               (many (except-char "\""))))
+
+    (run parse-string "\"aoeu\"")
+    ; (\a \o \e \u)
+
+To handle escapes properly:
+
+    (defparser string-char []
+      (choice (attempt (>> (char \\) (char \\) (always \\)))
+              (attempt (>> (char \\) (char \") (always \")))
+              (attempt (>> (char \\) (char \n) (always \newline)))
+              (attempt (>> (char \\) (char \t) (always \tab)))
+              ; other cases (maybe unicode escapes...)
+              (except-char ("\""))))
+
+    (run (string-char) "qwer\ty)
+    ; [\q \w \e \r \tab \y]
+
