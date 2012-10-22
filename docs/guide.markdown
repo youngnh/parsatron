@@ -290,15 +290,16 @@ one item.  It's like `+` in a regular expression instead of `*`.
     (run number-parser1 "100")
     ; (\1 \0 \0)
 
-### choice
+### either
 
-`choice` takes one or more parsers and creates a parser that will try each of
-them in order until one parses successfully, and return its result.  For example:
+`either` is a parser that takes two parsers. If the first one succeeds its 
+value is returned, if it fails, the second parser is tried and it's value is 
+returned.
 
     (def number (many1 (digit)))
     (def word (many1 (letter)))
 
-    (def number-or-word (choice number word))
+    (def number-or-word (either number word))
 
     (run number-or-word "dog")
     ; (\d \o \g)
@@ -306,9 +307,37 @@ them in order until one parses successfully, and return its result.  For example
     (run number-or-word "42")
     ; (\4 \2)
 
+    (run number-or-word "@#$")
+    ; RuntimeException ...
+
+### choice
+
+`choice` takes one or more parsers and creates a parser that will try each of
+them in order until one parses successfully, and return its result. It is 
+different from `either` in that it may take more than two parsers while 
+`either` can only take 2.
+
+For example:
+
+    (def number (many1 (digit)))
+    (def word (many1 (letter)))
+    (def other (many1 (any-char)))
+
+    (def number-or-word-or-anything (choice number word other))
+
+    (run number-or-word-or-anything "dog")
+    ; (\d \o \g)
+
+    (run number-or-word-or-anything "42")
+    ; (\4 \2)
+
+    (run number-or-word-or-anything "!@#$")
+    ; (\! \@ \# \$)
+
 Notice that we used `many1` when defining the parsers `number` and `word`.  If
 we had used `many` then this would always parse as a number because if there
 were no digits it would successfully return an empty sequence.
+
 
 ### between
 
