@@ -247,6 +247,13 @@
   []
   (token #(char? %)))
 
+(defn except-char
+  "Consume any characters except the ones provided"
+  [exclusions]
+  (token (fn [inp]
+           (and (char? inp)
+                (not (some #(= % inp) exclusions))))))
+
 (defn digit
   "Consume a digit [0-9] character"
   []
