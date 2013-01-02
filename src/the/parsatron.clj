@@ -150,10 +150,11 @@
    test returns nil or if the input is empty"
   [consume?]
   (fn [{:keys [input pos] :as state} cok cerr eok eerr]
-    (if-let [tok (first input)]
-      (if (consume? tok)
-        (cok tok (InputState. (rest input) (inc-sourcepos pos tok)))
-        (eerr (unexpect-error (str "token '" tok "'") pos)))
+    (if-not (empty? input)
+      (let [tok (first input)]
+        (if (consume? tok)
+          (cok tok (InputState. (rest input) (inc-sourcepos pos tok)))
+          (eerr (unexpect-error (str "token '" tok "'") pos))))
       (eerr (unexpect-error "end of input" pos)))))
 
 (defn many
