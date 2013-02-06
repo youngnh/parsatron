@@ -339,6 +339,93 @@ we had used `many` then this would always parse as a number because if there
 were no digits it would successfully return an empty sequence.
 
 
+### lookahead
+
+`lookahead` accepts any existing parser as a parameter. It then runs
+the parser and returns the result just as if the parser had been run
+on it's own. The interesting and useful feature of `lookahead` is that
+it consumes no input and leaves the state of your program untouched;
+just as if the lookahead parser had never been run at all. This is
+very handy for peeking ahead in order to make descisions about what to
+parse next.
+
+For example, say we need to parse a chunk of text that contains
+paragraphs and headlines. A paragraph is one or more lines of texts
+followed by two newlines:
+    
+    This is an example paragraph
+    that starts with some words spaces and a newline
+    
+A Headline is a line of text followed by equal signs (`=`): 
+
+    Headlines might also starts with words, spaces, newline
+    =======================================================
+
+First, we'll need some simple helper parsers (for parsing whitespace
+and characters). A line is one or more digits and/or letters and/or
+spaces followed by a single newline. 
+
+    (defparser ws []
+	  (many (token #{\space \tab})))
+	  
+	(defparser char-or-ws []
+	  (choice (letter) (digit) (whitespace)))
+      
+    (defparser line []
+      (many1 (char-or-ws)) ;; one or more text and/or spaces
+      (char \newline))     ;; followed by a newline
+
+Next, we'll need a `paragraph` parser. Our `paragraph` parser
+should look for one or more lines followed by 2 or more newlines.
+
+    (defparser paragraph [] 
+        (many1 (line))    
+        (many1 (char \newline))) 
+
+Next, we'll need a `headline` parser that looks for one line followed
+by one or more equal signs (`=`).
+
+    (defparser headline [] 
+        (line)
+        (many1 (char \=))) 
+
+Now we need to build a parser capable of parsing both headlines and
+paragraphs. You might think at first to use `either` or `choice` like
+this:
+
+	(defparser paragraph-or-headline []
+      (choice (headline) (paragraph)))
+      
+But, the bad news is that this won't work. Since headlines and
+paragraphs both begin with a line followed by a newline, `choice` will
+always "choose" `headline` (since `headline` is first in the list)
+regardless of whether the text to be parsed is actually a paragraph or
+a headline.
+
+The good news is that we can use `lookahead` to solve this issue: 
+
+    (defparser paragraph-or-headline []
+	  (let->>
+	   [next-char (lookahead (>> (line) (any-char)))]
+	   (if (= next-char \=)
+	     (headline)
+	     (paragraph))))
+         
+The interesting and relevant part here is this line: 
+
+    (lookahead (>> (line) (any-char)))
+
+This skips ahead over a single line and returns the value parsed by
+`(any-char)`. We then bind this value into `next-char` using `let->>`.
+If `next-char` is an equal sign (`=`), we know to use the `headline`
+parser. Otherwise, we know to use the `paragraph` parser.
+
+Now, parsing a chunk of text containing one or more headlines and/or
+paragraphs is easy!
+
+    (defparser paragraphs-and-headlines []
+      (many1 (paragraph-or-headline)))
+ 
 ### between
 
 `between` is a function that takes three parsers, call them left, right, and
