@@ -200,15 +200,9 @@
   [n p]
   (if (= n 0)
     (always [])
-    (fn [state cok cerr eok eerr]
-      (letfn [(pcok [item state]
-                (let [q (times (dec n) p)]
-                  (letfn [(qcok [items state]
-                            (cok (cons item items) state))]
-                    (Continue. #(q state qcok cerr qcok eerr)))))
-              (peok [item state]
-                (eok (repeat n item) state))]
-        (Continue. #(p state pcok cerr peok eerr))))))
+    (let->> [x p
+             xs (times (dec n) p)]
+      (always (cons x xs)))))
 
 (defn lookahead
   "A parser that upon success consumes no input, but returns what was

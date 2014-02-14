@@ -86,7 +86,12 @@
 
   (testing "returns a list with the results"
     (is (parser-result? [\a \a \a] (times 3 (char \a)) "aaa"))
-    (is (parser-result? [5 5 5] (times 3 (always 5)) ""))))
+    (is (parser-result? [5 5 5] (times 3 (always 5)) "")))
+
+  (testing "does not blow the stack"
+    (is (parser-result? (take 10000 (repeat \a))
+                        (times 10000 (char \a))
+                        (apply str (take 10000 (repeat \a)))))))
 
 (deftest test-lookahead
   (testing "returns value of p on success"
