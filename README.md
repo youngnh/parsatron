@@ -11,6 +11,15 @@ like and if it doesn't work out, fall back to where you started. It's a feature
 that's worked out well for others. I'm sure you'll find something useful to do
 with it.
 
+
+## Installation
+
+You can use The Parsatron by including
+
+    [the/parsatron "0.0.5"]
+
+in your `project.clj` dependencies. It's available for download from Clojars.
+
 ## Usage
 
 A basic syntax checker for a certain profane esoteric programming language could
@@ -68,11 +77,6 @@ be used later. `>>` is very similar to Clojure's `do` in that it executes it's
 forms in order, but "throws away" all but the value of the last form.
 
     (run (ben-string) "4:spam") ;; => [\s \p \a \m]
-
-## Installation
-
-You can use The Parsatron by including `[the/parsatron "0.0.3"]` in your `project.clj` dependencies.
-It's available for download from Clojars.
 
 ## License
 
