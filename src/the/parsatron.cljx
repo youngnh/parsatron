@@ -1,6 +1,9 @@
 (ns the.parsatron
   (:refer-clojure :exclude [char])
-  (:require [clojure.string :as str]))
+  (:require [clojure.string :as str])
+  #+cljs
+  (:require-macros
+   [the.parsatron :refer [defparser >> let->>]]))
 
 (defrecord InputState [input pos])
 (defrecord SourcePos [line column])
@@ -9,8 +12,9 @@
 (defrecord Ok [item])
 (defrecord Err [errmsg])
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; position
+;; ---------------------------------------------------------------------
+;; Position
+
 (defn inc-sourcepos
   "Increment the source position by a single character, c. On newline,
    increments the SourcePos's line number and resets the column, on
@@ -20,17 +24,19 @@
     (SourcePos. (inc line) 1)
     (SourcePos. line (inc column))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; errors
+;; ---------------------------------------------------------------------
+;; Errors
+
 (defprotocol ShowableError
   (show-error [this]))
 
 (defrecord ParseError [pos msgs]
   ShowableError
-  (show-error [_] (str (str/join ", " msgs)
-                       " at"
-                       " line: " (:line pos)
-                       " column: " (:column pos))))
+  (show-error [_]
+    (str (str/join ", " msgs)
+         " at"
+         " line: " (:line pos)
+         " column: " (:column pos))))
 
 (defn unknown-error [{:keys [pos] :as state}]
   (ParseError. pos ["Error"]))
@@ -44,8 +50,16 @@
 (defn merge-errors [{:keys [pos] :as err} other-err]
   (ParseError. pos (flatten (concat (:msgs err) (:msgs other-err)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; trampoline
+(defn fail [^String message]
+  (throw
+   #+clj
+   (RuntimeException. ^String message)
+   #+cljs
+   (js/Error. ^String message)))
+
+;; ---------------------------------------------------------------------
+;; Trampoline
+
 (defn parsatron-poline
   "A trampoline for executing potentially stack-blowing recursive
    functions without running out of stack space. This particular
@@ -63,8 +77,9 @@
     Continue (Continue. #(sequentially f ((:fn value))))
     (f value)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; m
+;; ---------------------------------------------------------------------
+;; M
+
 (defn always
   "A parser that always succeeds with the value given and consumes no
    input"
@@ -116,8 +131,9 @@
       `(bind ~p (fn [~bind-form] ~@body))
       `(bind ~p (fn [~bind-form] (let->> ~(drop 2 bindings) ~@body))))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; m+
+;; ---------------------------------------------------------------------
+;; M+
+
 (defn never
   "A parser that always fails, consuming no input"
   []
@@ -142,8 +158,8 @@
   (fn [state cok cerr eok eerr]
     (Continue. #(p state cok eerr eok eerr))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; interacting with the parser's state
+;; ---------------------------------------------------------------------
+;; Interacting with the parser's state
 
 (defn extract
   "Extract information from the Parser's current state. f should be a
@@ -165,8 +181,9 @@
   []
   (extract (comp :line :pos)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; token
+;; ---------------------------------------------------------------------
+;; Token
+
 (defn token
   "Consume a single item from the head of the input if (consume? item)
    is not nil. This parser will fail to consume if either the consume?
@@ -186,7 +203,7 @@
    that would cause the parser to loop forever"
   [p]
   (letfn [(many-err [_ _]
-            (throw (RuntimeException. "Combinator '*' is applied to a parser that accepts an empty string")))
+            (fail "Combinator '*' is applied to a parser that accepts an empty string"))
           (safe-p [state cok cerr eok eerr]
             (Continue. #(p state cok cerr many-err eerr)))]
     (either
@@ -240,23 +257,31 @@
 (defn any-char
   "Consume any character"
   []
-  (token #(char? %)))
+  #+clj
+  (token #(char? %))
+  #+cljs
+  (token #(and (string? %) (= (count %) 1))))
 
 (defn digit
   "Consume a digit [0-9] character"
   []
-  (token #(Character/isDigit ^Character %)))
+  #+clj
+  (token #(Character/isDigit ^Character %))
+  #+cljs
+  (token #(re-matches #"\d" %)))
 
 (defn letter
   "Consume a letter [a-zA-Z] character"
   []
-  (token #(Character/isLetter ^Character %)))
+  #+clj
+  (token #(Character/isLetter ^Character %))
+  #+cljs
+  (token #(re-matches #"[a-zA-Z]" %)))
 
 (defn string
   "Consume the given string"
   [s]
-  (reduce nxt (concat (map char s)
-                      (list (always s)))))
+  (reduce nxt (concat (map char s) (list (always s)))))
 
 (defn between
   "Parse p after parsing open and before parsing close, returning the
@@ -274,8 +299,9 @@
            xs (many p)]
     (always (cons x xs))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; run parsers
+;; ---------------------------------------------------------------------
+;; Run parsers
+
 (defn run-parser
   "Execute a parser p, given some state, Returns Ok or Err"
   [p state]
@@ -298,4 +324,4 @@
   (let [result (run-parser p (InputState. input (SourcePos. 1 1)))]
     (condp instance? result
       Ok (:item result)
-      Err (throw (RuntimeException. ^String (:errmsg result))))))
+      Err (fail (:errmsg result)))))
