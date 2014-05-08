@@ -37,4 +37,4 @@
                         :pretty-print true}}]
    :test-commands {"unit-tests" ["phantomjs" :cljs.test/runner "target/cljs/testable.js"]}}
 
-  :warn-on-reflection true)
+  :global-vars {*warn-on-reflection* true})
