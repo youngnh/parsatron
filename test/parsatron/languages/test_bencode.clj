@@ -18,4 +18,4 @@
 
 (deftest test-ben-dictionary
   (are [expected input] (= expected (run (ben-dictionary) input))
-       [{42 "spam", "spam" 42} "di42e4:spam4:spami42ee"]))
+       {42 "spam", "spam" 42} "di42e4:spam4:spami42ee"))
