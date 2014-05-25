@@ -1,6 +1,7 @@
 (ns the.parsatron
   (:refer-clojure :exclude [char])
-  (:require [clojure.string :as str]))
+  (:require [clojure.string :as str])
+  (:require-macros [the.parsatron :refer [defparser >> let->>]]))
 
 (defrecord InputState [input pos])
 (defrecord SourcePos [line column])
@@ -45,7 +46,7 @@
   (ParseError. pos (flatten (concat (:msgs err) (:msgs other-err)))))
 
 (defn fail [message]
-  (RuntimeException. message))
+  (js/Error. message))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; trampoline
@@ -94,30 +95,6 @@
   "Parse p and then q, returning q's value and discarding p's"
   [p q]
   (bind p (fn [_] q)))
-
-(defmacro defparser
-  "Defines a new parser. Parsers are simply functions that accept the
-   5 arguments state, cok, cerr, eok, eerr but this macro takes care
-   of writing that ceremony for you and wraps the body in a >>"
-  [name args & body]
-  `(defn ~name ~args
-     (fn [state# cok# cerr# eok# eerr#]
-       (let [p# (>> ~@body)]
-         (Continue. #(p# state# cok# cerr# eok# eerr#))))))
-
-(defmacro >>
-  "Expands into nested nxt forms"
-  ([m] m)
-  ([m n] `(nxt ~m ~n))
-  ([m n & ms] `(nxt ~m (>> ~n ~@ms))))
-
-(defmacro let->>
-  "Expands into nested bind forms"
-  [[& bindings] & body]
-  (let [[bind-form p] (take 2 bindings)]
-    (if (= 2 (count bindings))
-      `(bind ~p (fn [~bind-form] ~@body))
-      `(bind ~p (fn [~bind-form] (let->> ~(drop 2 bindings) ~@body))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; m+
@@ -239,6 +216,14 @@
   "Consume the given character"
   [c]
   (token #(= c %)))
+
+(defn char?
+  "Test for a single-character string.
+
+   ClojureScript doesn't support a character type, so we pretend it
+   does"
+  [x]
+  (and (string? x) (= (count x) 1)))
 
 (defn any-char
   "Consume any character"
