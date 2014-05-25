@@ -17,10 +17,7 @@
   :test-paths ["src" "target/generated-test"]
 
   :aliases
-  {"run-tests" ["do"
-                "test,"
-                "cljx" "once,"
-                "cljsbuild" "test"]}
+  {"do-tests" ["do" "cljx" "once," "test," "cljsbuild" "test"]}
 
   :cljx
   {:builds [{:source-paths ["src/"]
