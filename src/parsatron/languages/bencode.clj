@@ -8,9 +8,12 @@
   (let->> [digits (many1 (digit))]
     (always (read-string (apply str digits)))))
 
+(defn neg [x]
+  (* -1 x))
+
 (defparser negative-int []
   (let->> [digits (>> (char \-) (many1 (digit)))]
-    (always (read-string (apply str digits)))))
+    (always (neg (read-string (apply str digits))))))
 
 (defparser ben-integer []
   (between (char \i) (char \e)
