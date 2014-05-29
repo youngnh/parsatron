@@ -301,4 +301,4 @@
   (let [result (run-parser p (InputState. input (SourcePos. 1 1)))]
     (condp instance? result
       Ok (:item result)
-      Err (fail ^String (:errmsg result)))))
+      Err (throw (fail ^String (:errmsg result))))))
