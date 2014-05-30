@@ -1,4 +1,4 @@
-(defproject the/parsatron "0.0.7"
+(defproject the/parsatron "0.0.8-SNAPSHOT"
   :description "Clojure parser combinators"
 
   :dependencies [[org.clojure/clojure "1.6.0"]
