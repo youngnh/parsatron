@@ -16,7 +16,7 @@ with it.
 
 You can use The Parsatron by including
 
-    [the/parsatron "0.0.5"]
+    [the/parsatron "0.0.7"]
 
 in your `project.clj` dependencies. It's available for download from Clojars.
 
