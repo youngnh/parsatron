@@ -45,9 +45,6 @@
 (defn merge-errors [{:keys [pos] :as err} other-err]
   (ParseError. pos (flatten (concat (:msgs err) (:msgs other-err)))))
 
-(defn fail [message]
-  (js/Error. message))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; trampoline
 (defn parsatron-poline
@@ -66,6 +63,29 @@
   (condp instance? value
     Continue (Continue. #(sequentially f ((:fn value))))
     (f value)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; host environment
+(defn fail [message]
+  (js/Error. message))
+
+(defn char?
+  "Test for a single-character string.
+
+   ClojureScript doesn't support a character type, so we pretend it
+   does"
+  [x]
+  (and (string? x) (= (count x) 1)))
+
+(defn digit?
+  "Tests if a character is a digit: [0-9]"
+  [c]
+  (re-matches #"\d" c))
+
+(defn letter?
+  "Tests if a character is a letter: [a-zA-Z]"
+  [c]
+  (re-matches #"[a-zA-Z]" c))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; m
@@ -217,14 +237,6 @@
   [c]
   (token #(= c %)))
 
-(defn char?
-  "Test for a single-character string.
-
-   ClojureScript doesn't support a character type, so we pretend it
-   does"
-  [x]
-  (and (string? x) (= (count x) 1)))
-
 (defn any-char
   "Consume any character"
   []
@@ -233,12 +245,12 @@
 (defn digit
   "Consume a digit [0-9] character"
   []
-  (token #(re-matches #"\d" %)))
+  (token digit?))
 
 (defn letter
   "Consume a letter [a-zA-Z] character"
   []
-  (token #(re-matches #"[a-zA-Z]" %)))
+  (token letter?))
 
 (defn string
   "Consume the given string"

@@ -44,9 +44,6 @@
 (defn merge-errors [{:keys [pos] :as err} other-err]
   (ParseError. pos (flatten (concat (:msgs err) (:msgs other-err)))))
 
-(defn fail [message]
-  (RuntimeException. message))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; trampoline
 (defn parsatron-poline
@@ -65,6 +62,21 @@
   (condp instance? value
     Continue (Continue. #(sequentially f ((:fn value))))
     (f value)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; host environment
+(defn fail [message]
+  (RuntimeException. message))
+
+(defn digit?
+  "Tests if a character is a digit: [0-9]"
+  [c]
+  (Character/isDigit ^Character c))
+
+(defn letter?
+  "Tests if a character is a letter: [a-zA-Z]"
+  [c]
+  (Character/isLetter ^Character c))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; m
@@ -243,17 +255,17 @@
 (defn any-char
   "Consume any character"
   []
-  (token #(char? %)))
+  (token char?))
 
 (defn digit
   "Consume a digit [0-9] character"
   []
-  (token #(re-matches #"\d" %)))
+  (token digit?))
 
 (defn letter
   "Consume a letter [a-zA-Z] character"
   []
-  (token #(re-matches #"[a-zA-Z]" %)))
+  (token letter?))
 
 (defn string
   "Consume the given string"
