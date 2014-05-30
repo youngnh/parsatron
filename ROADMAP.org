@@ -1,0 +1,16 @@
+* 0.1.0
+** baseline sane error messages
+* 0.4.0
+** website with documentation
+at the least move github issue discussions into coherent pages
+marginalia?
+list of other good resources for learning parser combinators
+* 1.0
+** grammar support
+put in a grammar in a BNF format and get back parsatron-implemented parsers
+** 5-7 non-trivial example parsers
+at least one using a lexer + parsatron over a seq of lexical tokens, not chars
+** basic compile-time parser optimizations where possible
+** unified clj+cljs codebase + host-environment specific files
+low-magic build process
+one command to run both clj & cljs tests
