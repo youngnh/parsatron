@@ -13,6 +13,9 @@
   (let [err (js/assertThrows f)]
     (js/assertTrue (.test re (.-message err)))))
 
+(defn doeach [f & args]
+  (doall (map f args)))
+
 
 
 (defn test-always []
@@ -93,6 +96,66 @@
                         (apply str (take 1000 (repeat "a")))))))
 
 (.add test (TestCase.Test. "test-many" test-many))
+
+(defn test-times []
+  ;; 0 times returns [], and does not consume
+  (parser-result? [] (p/times 0 (p/char "a")) "")
+
+  ;; throws an error (from underlying parser) if fewer than specified
+  (doeach
+   (fn [input]
+     (throws-with-msg? #"Unexpected end of input" #(p/run (p/times 3 (p/char "a")) input)))
+   ""
+   "a"
+   "aa")
+
+  ;; returns a list with the results
+  (js/assertTrue (= ["a" "a" "a"] (p/run (p/times 3 (p/char "a")) "aaa")))
+  (js/assertTrue (= [5 5 5] (p/run (p/times 3 (p/always 5)) "")))
+
+  ;; does not blow the stack
+  (js/assertTrue (= (take 10000 (repeat "a"))
+                    (p/run
+                        (p/times 10000 (p/char "a"))
+                        (apply str (take 10000 (repeat "a")))))))
+
+(.add test (TestCase.Test. "test-times" test-times))
+
+(defn test-lookahead []
+  ;; returns value of p on success
+  (parser-result? "a" (p/lookahead (p/char "a")) "a")
+
+  ;; does not consume input on success
+  (parser-result? "a" (>> (p/lookahead (p/char "a")) (p/char "a")) "a"))
+
+(.add test (TestCase.Test. "test-lookahead" test-lookahead))
+
+(defn test-choice []
+  ;; choice with no choices throws an exception
+  (js/assertThrows #(p/run (p/choice) ""))
+
+  ;; first parser to succeed returns result
+  (doeach
+   (fn [input]
+     (parser-result? (first input) (p/choice (p/char "a") (p/char "b") (p/char "c")) input))
+   "a"
+   "b"
+   "c"))
+
+(.add test (TestCase.Test. "test-choice" test-choice))
+
+(defn test-eof []
+  ;; parser succeeds, returns nil when no more input left
+  (parser-result? nil (p/eof) "")
+  (parser-result? nil (>> (p/char "a") (p/eof)) "a")
+
+  ;; parser fails with message when input if left
+  (throws-with-msg? #"Expected end of input"
+                    #(p/run (p/eof) "a"))
+  (throws-with-msg? #"Expected end of input"
+                    #(p/run (>> (p/char "a") (p/eof)) "ab")))
+
+(.add test (TestCase.Test. "test-eof" test-eof))
 
 (.initialize tr test)
 (.execute tr)
