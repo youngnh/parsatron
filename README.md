@@ -20,6 +20,23 @@ You can use The Parsatron by including
 
 in your `project.clj` dependencies. It's available for download from Clojars.
 
+## ClojureScript Support
+
+The Parsatron has been ported to ClojureScript and is included in the
+library distribution. There are a few small differences between ClojureScript
+and Clojure that follow The Parsatron into the browser, namely:
+
+* The Parsatron makes liberal use of macros: `>>`, `let->>` and
+  `defparser` must be included via `:require-macros`
+* ClojureScript has no notion of a character type like Clojure does.
+  The Parsatron considers Strings of length 1 to be characters
+
+The Parsatron's ClojureScript tests can be run by first building them:
+
+    lein cljsbuild once
+
+and then opening the html file [test/resources/parsatron_test.html](test/resources/parsatron_test.html)
+
 ## Usage
 
 A basic syntax checker for a certain profane esoteric programming language could
