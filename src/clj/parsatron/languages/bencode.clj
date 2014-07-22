@@ -34,7 +34,7 @@
                 (always [key val]))]
     (between (char \d) (char \e)
              (let->> [entries (many entry)]
-               (always (into {} entries))))))
+               (always (into (sorted-map) entries))))))
 
 (defparser ben-value []
   (choice (ben-integer)
