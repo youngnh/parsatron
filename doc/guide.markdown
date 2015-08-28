@@ -138,6 +138,20 @@ that we can use the parsatron to parse more than just strings:
     (run (any-char) [1 2 3])
     ; RuntimeException...
 
+### any-char-except
+
+`any-char-except` creates parsers that will parse and return any character except given character.  Remember
+that we can use the parsatron to parse more than just strings:
+
+    (run (any-char-except \a) "Cats")
+    ; \C
+
+    (run (any-char-except \s) [\C \a \t \s])
+    ; RuntimeException...
+
+    (run (any-char-except \1) [1 2 3])
+    ; RuntimeException...
+
 ### letter and digit
 
 `letter` and `digits` create parsers that parse and return letter characters
