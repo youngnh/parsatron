@@ -258,9 +258,9 @@
   (token char?))
 
 (defn any-char-except
-  "Consume any character except given character"
-  [c]
-  (token #(and (char? %) (not= % c))))
+  "Consume any character except given characters"
+  [& c]
+  (token #(and (char? %) (every? (fn [c] (not= % c)) c))))
 
 (defn digit
   "Consume a digit [0-9] character"

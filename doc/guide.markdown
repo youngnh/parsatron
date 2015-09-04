@@ -140,13 +140,12 @@ that we can use the parsatron to parse more than just strings:
 
 ### any-char-except
 
-`any-char-except` creates parsers that will parse and return any character except given character.  Remember
-that we can use the parsatron to parse more than just strings:
+`any-char-except` creates parsers that will parse and return any character except given characters. 
 
-    (run (any-char-except \a) "Cats")
+    (run (any-char-except \a \t \s) "Cats")
     ; \C
 
-    (run (any-char-except \s) [\C \a \t \s])
+    (run (any-char-except \s \a) [\C \a \t \s])
     ; RuntimeException...
 
     (run (any-char-except \1) [1 2 3])
