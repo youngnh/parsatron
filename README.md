@@ -42,18 +42,20 @@ and then opening the html file [test/resources/parsatron_test.html](test/resourc
 A basic syntax checker for a certain profane esoteric programming language could
 be defined as follows:
 
-    (defparser instruction []
-      (choice (char \>)
-              (char \<)
-              (char \+)
-              (char \-)
-              (char \.)
-              (char \,)
-              (between (char \[) (char \]) (many (instruction)))))
+```clojure
+(defparser instruction []
+  (choice (char \>)
+          (char \<)
+          (char \+)
+          (char \-)
+          (char \.)
+          (char \,)
+          (between (char \[) (char \]) (many (instruction)))))
 
-    (defparser bf []
-      (many (instruction))
-      (eof))
+(defparser bf []
+  (many (instruction))
+  (eof))
+```
 
 The `defparser` forms create new parsers that you can combine into other, more
 complex parsers. As you can see in this example, those parsers can be recursive.
@@ -67,7 +69,9 @@ what is asked of them without hestitation or spite.
 
 You execute a parser over some input via the `run` form.
 
-    (run (bf) ",>++++++[<-------->-],[<+>-]<.")
+```clojure
+(run (bf) ",>++++++[<-------->-],[<+>-]<.")
+```
 
 Currently, The Parsatron only provides character-oriented parsers, but the ideas
 it's built on are powerful enough that with the right series of commits, it can
@@ -84,16 +88,20 @@ macros `>>` and `let->>` embody this facility.
 
 As an example, [bencoded strings](http://en.wikipedia.org/wiki/Bencode) are prefixed by their length and a colon:
 
-    (defparser ben-string []
-      (let->> [length (integer)]
-        (>> (char \:)
-            (times length (any-char)))))
+```clojure
+(defparser ben-string []
+  (let->> [length (integer)]
+    (>> (char \:)
+        (times length (any-char)))))
+```
 
 `let->>` allows you to capture and name the result of a parser so it's value may
 be used later. `>>` is very similar to Clojure's `do` in that it executes it's
 forms in order, but "throws away" all but the value of the last form.
 
-    (run (ben-string) "4:spam") ;; => [\s \p \a \m]
+```clojure
+(run (ben-string) "4:spam") ;; => [\s \p \a \m]
+```
 
 ## License
 
