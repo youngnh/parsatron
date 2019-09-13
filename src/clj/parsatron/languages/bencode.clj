@@ -28,20 +28,13 @@
   (between (char \l) (char \e)
            (many (ben-value))))
 
-(defn comparer [a b]
-  (if (and (string? a) (string? b))
-    (compare a b)
-    (throw (ex-info "Dictionary keys must be strings"
-                    (let [faulty-key (if (string? a) b a)]
-                      {:key faulty-key :type (type faulty-key)})))))
-
 (defparser ben-dictionary []
-  (let [entry (let->> [key (ben-value)
+  (let [entry (let->> [key (ben-bytestring)
                        val (ben-value)]
                 (always [key val]))]
     (between (char \d) (char \e)
              (let->> [entries (many entry)]
-               (always (into (sorted-map-by comparer) entries))))))
+               (always (into (sorted-map) entries))))))
 
 (defparser ben-value []
   (choice (ben-integer)
