@@ -18,4 +18,16 @@
 
 (deftest test-ben-dictionary
   (are [expected input] (= expected (run (ben-dictionary) input))
-       {42 "spam", "spam" 42} "di42e4:spam4:spami42ee"))
+       {"42" "spam", "spam" 42} "d2:424:spam4:spami42ee"
+       {"spam" ["a" "b"]} "d4:spaml1:a1:bee"
+       {"name" "Mary"
+        "age" 33
+        "children" ["Betty", "Sam"]
+        "address" {"street" "1 Home St"
+                   "city" "Anywhere"}}
+        "d4:name4:Mary3:agei33e8:childrenl5:Betty3:Same7:addressd6:street9:1 Home St4:city8:Anywhereee")
+  (let [ex (is (thrown-with-msg?
+                 clojure.lang.ExceptionInfo #"Dictionary keys must be strings"
+                 (run (ben-dictionary) "di42e4:spam4:spami42ee")))]
+    (is (= {:key 42, :type java.lang.Long} (ex-data ex)))))
+

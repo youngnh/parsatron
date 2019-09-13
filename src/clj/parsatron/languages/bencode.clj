@@ -29,11 +29,11 @@
            (many (ben-value))))
 
 (defn comparer [a b]
-  (if (= (type a) (type b))
+  (if (and (string? a) (string? b))
     (compare a b)
-    (cond (string? a) -1
-          (string? b) 1
-          :default (compare a b))))
+    (throw (ex-info "Dictionary keys must be strings"
+                    (let [faulty-key (if (string? a) b a)]
+                      {:key faulty-key :type (type faulty-key)})))))
 
 (defparser ben-dictionary []
   (let [entry (let->> [key (ben-value)
