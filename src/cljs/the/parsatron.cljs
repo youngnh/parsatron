@@ -1,5 +1,5 @@
 (ns the.parsatron
-  (:refer-clojure :exclude [char])
+  (:refer-clojure :exclude [char char?])
   (:require [clojure.string :as str])
   (:require-macros [the.parsatron :refer [defparser >> let->>]]))
 

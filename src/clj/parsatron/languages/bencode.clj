@@ -29,7 +29,7 @@
            (many (ben-value))))
 
 (defparser ben-dictionary []
-  (let [entry (let->> [key (ben-value)
+  (let [entry (let->> [key (ben-bytestring)
                        val (ben-value)]
                 (always [key val]))]
     (between (char \d) (char \e)
