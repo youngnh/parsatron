@@ -1,4 +1,4 @@
-(defproject quoll/parsatron "0.0.8"
+(defproject org.clojars.quoll/parsatron "0.0.8"
   :description "Clojure parser combinators. Forked from Nate Young's Master"
 
   :dependencies [[org.clojure/clojure "1.10.1"]
