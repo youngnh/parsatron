@@ -1,0 +1,10 @@
+#kaocha/v1
+{:tests [{:id :unit-cljs-node
+          :type :kaocha.type/cljs
+          :test-paths ["test"]}
+         {:id :unit-cljs-browser
+          :type :kaocha.type/cljs
+          :test-paths ["test"]
+          :cljs/repl-env cljs.repl.browser/repl-env}
+         {:id :unit-clj}]
+ :plugins [:kaocha.plugin/cloverage]}

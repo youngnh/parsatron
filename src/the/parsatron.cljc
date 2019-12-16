@@ -1,6 +1,7 @@
 (ns the.parsatron
-  (:refer-clojure :exclude [char])
-  (:require [clojure.string :as str]))
+  (:refer-clojure :exclude [char char?])
+  (:require [clojure.string :as str])
+  #?(:cljs (:require-macros [the.parsatron :refer [defparser let->> >>]])))
 
 (defrecord InputState [input pos])
 (defrecord SourcePos [line column])
@@ -32,7 +33,7 @@
                        " line: " (:line pos)
                        " column: " (:column pos))))
 
-(defn unknown-error [{:keys [pos] :as state}]
+(defn unknown-error [{:keys [pos] :as _state}]
   (ParseError. pos ["Error"]))
 
 (defn unexpect-error [msg pos]
@@ -66,17 +67,29 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; host environment
 (defn fail [message]
-  (RuntimeException. message))
+  (#?(:clj RuntimeException.
+      :cljs js/Error.) message))
+
+(defn char?
+  "Test for a single-character string.
+
+   ClojureScript doesn't support a character type, so we pretend it
+   does"
+  [x]
+  #?(:clj (clojure.core/char? x)
+     :cljs (and (string? x) (= (count x) 1))))
 
 (defn digit?
   "Tests if a character is a digit: [0-9]"
   [c]
-  (Character/isDigit ^Character c))
+  #?(:clj (Character/isDigit ^Character c)
+     :cljs (re-matches #"\d" c)))
 
 (defn letter?
   "Tests if a character is a letter: [a-zA-Z]"
   [c]
-  (Character/isLetter ^Character c))
+  #?(:clj (Character/isLetter ^Character c)
+     :cljs (re-matches #"[a-zA-Z]" c)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; m
@@ -107,29 +120,32 @@
   [p q]
   (bind p (fn [_] q)))
 
-(defmacro defparser
-  "Defines a new parser. Parsers are simply functions that accept the
+#?(:clj
+   (defmacro defparser
+     "Defines a new parser. Parsers are simply functions that accept the
    5 arguments state, cok, cerr, eok, eerr but this macro takes care
    of writing that ceremony for you and wraps the body in a >>"
-  [name args & body]
-  `(defn ~name ~args
-     (fn [state# cok# cerr# eok# eerr#]
-       (let [p# (>> ~@body)]
-         (Continue. #(p# state# cok# cerr# eok# eerr#))))))
+     [name args & body]
+     `(defn ~name ~args
+        (fn [state# cok# cerr# eok# eerr#]
+          (let [p# (>> ~@body)]
+            (Continue. #(p# state# cok# cerr# eok# eerr#)))))))
 
-(defmacro >>
-  "Expands into nested nxt forms"
-  ([m] m)
-  ([m n] `(nxt ~m ~n))
-  ([m n & ms] `(nxt ~m (>> ~n ~@ms))))
+#?(:clj
+   (defmacro >>
+     "Expands into nested nxt forms"
+     ([m] m)
+     ([m n] `(nxt ~m ~n))
+     ([m n & ms] `(nxt ~m (>> ~n ~@ms)))))
 
-(defmacro let->>
-  "Expands into nested bind forms"
-  [[& bindings] & body]
-  (let [[bind-form p] (take 2 bindings)]
-    (if (= 2 (count bindings))
-      `(bind ~p (fn [~bind-form] ~@body))
-      `(bind ~p (fn [~bind-form] (let->> ~(drop 2 bindings) ~@body))))))
+#?(:clj
+   (defmacro let->>
+     "Expands into nested bind forms"
+     [[& bindings] & body]
+     (let [[bind-form p] (take 2 bindings)]
+       (if (= 2 (count bindings))
+         `(bind ~p (fn [~bind-form] ~@body))
+         `(bind ~p (fn [~bind-form] (let->> ~(drop 2 bindings) ~@body)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; m+
