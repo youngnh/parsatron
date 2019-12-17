@@ -1,0 +1,26 @@
+{
+  "name": "parsatron",
+  "version": "1.0.0",
+  "description": "Born from Haskell's Parsec library, The Parsatron is a functional parser library. The Parsatron provides a lot of very small functions that can be combined into larger ones to very quickly write parsers for languages.",
+  "main": "index.js",
+  "directories": {
+    "doc": "doc",
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DeLaGuardo/parsatron.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/DeLaGuardo/parsatron/issues"
+  },
+  "homepage": "https://github.com/DeLaGuardo/parsatron#readme",
+  "devDependencies": {
+    "ws": "^7.2.1"
+  }
+}

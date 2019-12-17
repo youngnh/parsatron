@@ -1,10 +1,13 @@
 /target
 /classes
 /checkouts
+/node_modules
+/out
 pom.xml
 pom.xml.asc
 *.jar
 *.class
 /.lein-*
 /.nrepl-port
-test/resources/parsatron_test.js
+/.cpcache
+**/.DS_Store
