@@ -1,6 +1,8 @@
 (ns the.parsatron
-  (:refer-clojure :exclude [char])
-  (:require [clojure.string :as str]))
+  #?(:clj  (:refer-clojure :exclude [char])
+     :cljs (:refer-clojure :exclude [char char?]))
+  (:require [clojure.string :as str])
+  #_(:require-macros [the.parsatron :refer [defparser >> let->>]]))
 
 (defrecord InputState [input pos])
 (defrecord SourcePos [line column])
@@ -65,18 +67,44 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; host environment
-(defn fail [message]
-  (RuntimeException. message))
+#?(:clj 
+   (defn fail [message]
+     (RuntimeException. message))
 
-(defn digit?
-  "Tests if a character is a digit: [0-9]"
-  [c]
-  (Character/isDigit ^Character c))
+   :cljs
+   (defn fail [message]
+     (js/Error. message)))
 
-(defn letter?
-  "Tests if a character is a letter: [a-zA-Z]"
-  [c]
-  (Character/isLetter ^Character c))
+#?(:cljs
+   (defn char?
+     "Test for a single-character string.
+     ClojureScript doesn't support a character type, so we pretend it does"
+     [x]
+     (and (string? x) (= (count x) 1))))
+
+#?(:clj
+   (defn digit?
+     "Tests if a character is a digit: [0-9]"
+     [c]
+     (Character/isDigit ^Character c))
+
+  :cljs
+   (defn digit?
+     "Tests if a character is a digit: [0-9]"
+     [c]
+     (re-matches #"\d" c)))
+
+#?(:clj
+   (defn letter?
+     "Tests if a character is a letter: [a-zA-Z]"
+     [c]
+     (Character/isLetter ^Character c))
+
+  :cljs
+   (defn letter?
+     "Tests if a character is a letter: [a-zA-Z]"
+     [c]
+     (re-matches #"[a-zA-Z]" c)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; m

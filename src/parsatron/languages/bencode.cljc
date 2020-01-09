@@ -1,6 +1,11 @@
 (ns parsatron.languages.bencode
   (:refer-clojure :exclude [char])
-  (:use [the.parsatron]))
+  (:require
+   #?(:clj [the.parsatron
+            :refer [defparser digit char any-char many many1 always either between choice let->> >> times]]
+      :cljs [the.parsatron
+             :refer [digit char any-char many many1 always either between choice times]
+             :refer-macros [let->> >> defparser]])))
 
 (declare ben-value)
 
