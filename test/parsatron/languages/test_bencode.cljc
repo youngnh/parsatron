@@ -1,5 +1,4 @@
 (ns parsatron.languages.test-bencode
-  (:refer-clojure :exclude [char])
   (:require [the.parsatron :refer [run]]
             [parsatron.languages.bencode :refer [ben-integer ben-bytestring ben-list ben-dictionary]]
             #?(:clj  [clojure.test :refer [deftest are is]]

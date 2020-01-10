@@ -1,5 +1,4 @@
 (ns parsatron.test-trampoline
-  (:refer-clojure :exclude [char])
   #?(:clj
      (:require [the.parsatron :refer [always bind]]
                [clojure.test :refer [deftest testing is]])

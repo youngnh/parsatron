@@ -1,6 +1,4 @@
 (ns the.parsatron
-  #?(:clj  (:refer-clojure :exclude [char])
-     :cljs (:refer-clojure :exclude [char char?]))
   (:require [clojure.string :as str])
   #?(:cljs (:require-macros [the.parsatron :refer [defparser >> let->>]])))
 
@@ -67,8 +65,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; host environment
-#?(:cljs
-   (defn char?
+#?(:clj
+   (def ch? char?)
+
+   :cljs
+   (defn ch?
      "Test for a single-character string.
      ClojureScript doesn't support a character type, so we pretend it does"
      [x]
@@ -271,7 +272,7 @@
       (eok nil state)
       (eerr (expect-error "end of input" pos)))))
 
-(defn char
+(defn ch
   "Consume the given character"
   [c]
   (token #(= c %)))
@@ -279,7 +280,7 @@
 (defn any-char
   "Consume any character"
   []
-  (token char?))
+  (token ch?))
 
 (defn digit
   "Consume a digit [0-9] character"
@@ -294,7 +295,7 @@
 (defn string
   "Consume the given string"
   [s]
-  (reduce nxt (concat (map char s)
+  (reduce nxt (concat (map ch s)
                       (list (always s)))))
 
 (defn between
