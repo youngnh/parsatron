@@ -2,14 +2,14 @@
   #?(:clj  (:refer-clojure :exclude [char])
      :cljs (:refer-clojure :exclude [char char?]))
   (:require [clojure.string :as str])
-  #_(:require-macros [the.parsatron :refer [defparser >> let->>]]))
+  #?(:cljs (:require-macros [the.parsatron :refer [defparser >> let->>]])))
 
 (defrecord InputState [input pos])
 (defrecord SourcePos [line column])
 
 (defrecord Continue [fn])
 (defrecord Ok [item])
-(defrecord Err [errmsg])
+(defrecord Err [errmsg pos])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; position
@@ -67,14 +67,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; host environment
-#?(:clj 
-   (defn fail [message]
-     (RuntimeException. message))
-
-   :cljs
-   (defn fail [message]
-     (js/Error. message)))
-
 #?(:cljs
    (defn char?
      "Test for a single-character string.
@@ -223,15 +215,19 @@
           (eerr (unexpect-error (str "token '" tok "'") pos))))
       (eerr (unexpect-error "end of input" pos)))))
 
+;; Declared for ClojureScript since the compiler does not recognize the let->> macro
+;; and issues a warning when it binds these vars
+;; #?(:cljs #_(declare x xs _))
+
 (defn many
   "Consume zero or more p. A RuntimeException will be thrown if this
    combinator is applied to a parser that accepts the empty string, as
    that would cause the parser to loop forever"
   [p]
-  (letfn [(many-err [_ _]
-            (fail "Combinator '*' is applied to a parser that accepts an empty string"))
+  (letfn [(many-err [pos _ _]
+            (Err. "Combinator '*' is applied to a parser that accepts an empty string" pos))
           (safe-p [state cok cerr eok eerr]
-            (Continue. #(p state cok cerr many-err eerr)))]
+            (Continue. #(p state cok cerr (partial many-err (:pos state)) eerr)))]
     (either
      (let->> [x safe-p
               xs (many safe-p)]
@@ -326,11 +322,11 @@
                     (fn cok [item _]
                       (Ok. item))
                     (fn cerr [err]
-                      (Err. (show-error err)))
+                      (Err. (show-error err) (:pos err)))
                     (fn eok [item _]
                       (Ok. item))
                     (fn eerr [err]
-                      (Err. (show-error err)))))
+                      (Err. (show-error err) (:pos err)))))
 
 (defn run
   "Run a parser p over some input. The input can be a string or a seq
@@ -341,4 +337,4 @@
   (let [result (run-parser p (InputState. input (SourcePos. 1 1)))]
     (condp instance? result
       Ok (:item result)
-      Err (throw (fail ^String (:errmsg result))))))
+      Err (throw (ex-info ^String (:errmsg result) (:pos result))))))
