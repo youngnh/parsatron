@@ -1,5 +1,4 @@
 (ns parsatron.languages.test-bf
-  (:refer-clojure :exclude [char])
   (:require [the.parsatron :refer [run]]
         [parsatron.languages.bf :refer [bf]]
         #?(:clj  [clojure.test :refer [deftest are]]
