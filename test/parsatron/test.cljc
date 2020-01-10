@@ -1,8 +1,17 @@
 (ns parsatron.test
   (:refer-clojure :exclude [char])
-  (:use [the.parsatron]
-        [clojure.test])
-  (:import (the.parsatron SourcePos)))
+  #?(:clj
+     (:require [the.parsatron :refer [run always nxt bind never either char attempt token
+                                      many times lookahead choice eof >>]]
+               [clojure.test :refer [is are deftest testing]])
+     :cljs
+     (:require [the.parsatron :refer [run always nxt bind never either char attempt token
+                                      many times lookahead choice eof SourcePos]
+                              :refer-macros [>>]]
+               [clojure.test :refer [run-tests] :refer-macros [is are deftest testing]]))
+  #?(:clj
+     (:import (the.parsatron SourcePos)
+              (clojure.lang ExceptionInfo))))
 
 (defn parser-result? [expected p input]
   (= expected (run p input)))
@@ -21,8 +30,8 @@
                                 (always (+ x 5)))) "")))
 
 (deftest test-never
-  (is (thrown? RuntimeException (run (never) "")))
-  (is (thrown? RuntimeException (run (never) "abc"))))
+  (is (thrown? ExceptionInfo (run (never) "")))
+  (is (thrown? ExceptionInfo (run (never) "abc"))))
 
 (deftest test-either
   (testing "first parser succeeds"
@@ -32,7 +41,7 @@
     (is (parser-result? 5 (either (never) (always 5)) "")))
 
   (testing "when neither succeed, errors are merged"
-    (is (thrown-with-msg? RuntimeException #"Unexpected token 'c', Unexpected token 'c'"
+    (is (thrown-with-msg? ExceptionInfo #"Unexpected token 'c', Unexpected token 'c'"
           (run (either (char \a) (char \b)) "c")))))
 
 (deftest test-attempt
@@ -40,23 +49,23 @@
     (is (parser-result? \a (attempt (char \a)) "a")))
 
   (testing "failure is same as never"
-    (is (thrown? RuntimeException (run (attempt (char \a)) "b")))
+    (is (thrown? ExceptionInfo (run (attempt (char \a)) "b")))
     (is (parser-result? \c (either (attempt (>> (char \a) (char \b)))
                                    (>> (char \a) (char \c))) "ac"))))
 
 (deftest test-token
   (testing "throws error on empty input"
-    (is (thrown-with-msg? RuntimeException #"Unexpected end of input"
+    (is (thrown-with-msg? ExceptionInfo #"Unexpected end of input"
           (run (token (constantly true)) ""))))
 
   (testing "consume? determines parser's behavior, show-f used in error message"
     (is (parser-result? \a (token (constantly true)) "a"))
-    (is (thrown-with-msg? RuntimeException #"Unexpected token 'a'"
+    (is (thrown-with-msg? ExceptionInfo #"Unexpected token 'a'"
           (run (token (constantly false)) "a")))))
 
 (deftest test-many
   (testing "throws an exception if parser does not consume"
-    (is (thrown-with-msg? RuntimeException #"Combinator '\*' is applied to a parser that accepts an empty string"
+    (is (thrown-with-msg? ExceptionInfo #"Combinator '\*' is applied to a parser that accepts an empty string"
           (run (many (always 5)) ""))))
 
   (testing "returns empty list when no input consumed"
@@ -78,7 +87,7 @@
     (is (parser-result? [] (times 0 (char \a)) "")))
 
   (testing "throws an error (from underlying parser) if fewer than specified"
-    (are [input] (thrown-with-msg? RuntimeException #"Unexpected end of input"
+    (are [input] (thrown-with-msg? ExceptionInfo #"Unexpected end of input"
                    (run (times 3 (char \a)) input))
          ""
          "a"
@@ -102,7 +111,7 @@
 
 (deftest test-choice
   (testing "choice with no choices throws an exception"
-    (is (thrown? RuntimeException (run (choice) ""))))
+    (is (thrown? ExceptionInfo (run (choice) ""))))
 
   (testing "first parser to succeed returns result"
     (are [input] (parser-result? (first input) (choice (char \a) (char \b) (char \c)) input)
@@ -116,7 +125,9 @@
     (is (parser-result? nil (>> (char \a) (eof)) "a")))
 
   (testing "parser fails with message when input if left"
-    (is (thrown-with-msg? RuntimeException #"Expected end of input"
+    (is (thrown-with-msg? ExceptionInfo #"Expected end of input"
           (run (eof) "a")))
-    (is (thrown-with-msg? RuntimeException #"Expected end of input"
+    (is (thrown-with-msg? ExceptionInfo #"Expected end of input"
           (run (>> (char \a) (eof)) "ab")))))
+
+#?(:cljs (run-tests))

@@ -9,13 +9,15 @@
 
 (declare ben-value)
 
+(def to-int #?(:clj read-string :cljs int))
+
 (defparser positive-int []
   (let->> [digits (many1 (digit))]
-    (always (read-string (apply str digits)))))
+    (always (to-int (apply str digits)))))
 
 (defparser negative-int []
   (let->> [digits (>> (char \-) (many1 (digit)))]
-    (always (read-string (apply str digits)))))
+    (always (to-int (apply str digits)))))
 
 (defparser ben-integer []
   (between (char \i) (char \e)

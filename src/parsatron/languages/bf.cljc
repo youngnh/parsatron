@@ -1,7 +1,8 @@
 (ns parsatron.languages.bf
   (:refer-clojure :exclude [char])
-  (:require #?(:clj  [the.parsatron :refer [choice char many between eof defparser]]
-               :cljs [the.parsatron :refer [choice char many between eof] :refer-macros [defparser]])))
+  (:require #?(:clj  [the.parsatron :refer [choice char many between eof defparser always let->>]]
+               :cljs [the.parsatron :refer [choice char many between eof always]
+                      :refer-macros [defparser let->>]])))
 
 (defparser instruction []
   (choice (char \>)
@@ -13,5 +14,6 @@
           (between (char \[) (char \]) (many (instruction)))))
 
 (defparser bf []
-  (many (instruction))
-  (eof))
+  (let->> [result (many (instruction))
+           _ (eof)]
+    (always result)))
