@@ -216,10 +216,6 @@
           (eerr (unexpect-error (str "token '" tok "'") pos))))
       (eerr (unexpect-error "end of input" pos)))))
 
-;; Declared for ClojureScript since the compiler does not recognize the let->> macro
-;; and issues a warning when it binds these vars
-;; #?(:cljs #_(declare x xs _))
-
 (defn many
   "Consume zero or more p. A RuntimeException will be thrown if this
    combinator is applied to a parser that accepts the empty string, as
