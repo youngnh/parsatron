@@ -1,5 +1,7 @@
 # The Parsatron
 
+Fork of Nate's Excellent Parsatron library.
+
 Born from Haskell's Parsec library, The Parsatron is a functional
 parser library. The Parsatron provides a lot of very small functions that can
 be combined into larger ones to very quickly write parsers for languages.
@@ -16,7 +18,7 @@ with it.
 
 You can use The Parsatron by including
 
-    [the/parsatron "0.0.8"]
+[![Clojars Project](http://clojars.org/org.clojars.quoll/parsatron/latest-version.svg)](http://clojars.org/org.clojars.quoll/parsatron)
 
 in your `project.clj` dependencies. It's available for download from Clojars.
 
