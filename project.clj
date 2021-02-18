@@ -1,15 +1,18 @@
-(defproject the/parsatron "0.0.9-SNAPSHOT"
+(defproject org.clojars.quoll/parsatron "0.0.10"
   :description "Clojure parser combinators"
 
-  :dependencies [[org.clojure/clojure "1.10.1"]
-                 [org.clojure/clojurescript "1.10.597"]]
+  :dependencies [[org.clojure/clojure "1.10.2"] ]
 
-  :plugins [[lein-cljsbuild "1.1.7"]]
+  :plugins [[lein-cljsbuild "1.1.8"]]
 
   :source-paths ["src"]
   :test-paths ["test"]
 
   :global-vars {*warn-on-reflection* false}
+
+  :profiles {
+    :dev {
+      :dependencies [[org.clojure/clojurescript "1.10.773"]]}}
 
   :cljsbuild {:builds
                 {:dev
