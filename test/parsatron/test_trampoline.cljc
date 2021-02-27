@@ -1,8 +1,12 @@
 (ns parsatron.test-trampoline
-  (:refer-clojure :exclude [char])
-  (:use [the.parsatron]
-        [clojure.test])
-  (:import (the.parsatron Continue Ok)))
+  #?(:clj
+     (:require [the.parsatron :refer [always bind]]
+               [clojure.test :refer [deftest testing is]])
+     :cljs
+     (:require [the.parsatron :refer [always bind Continue Ok]]
+               [clojure.test :refer [run-tests] :refer-macros [deftest testing is]]))
+  #?(:clj
+     (:import (the.parsatron Continue Ok))))
 
 (deftest test-always
   (testing "always is a fn"
@@ -21,3 +25,5 @@
         (is (instance? Continue q-continue))
         (let [result ((:fn q-continue))]
           (is (= (Ok. 7) result)))))))
+
+#?(:cljs (run-tests))

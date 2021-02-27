@@ -1,13 +1,13 @@
 (ns the.parsatron
-  (:refer-clojure :exclude [char])
-  (:require [clojure.string :as str]))
+  (:require [clojure.string :as str])
+  #?(:cljs (:require-macros [the.parsatron :refer [defparser >> let->>]])))
 
 (defrecord InputState [input pos])
 (defrecord SourcePos [line column])
 
 (defrecord Continue [fn])
 (defrecord Ok [item])
-(defrecord Err [errmsg])
+(defrecord Err [errmsg pos])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; position
@@ -65,18 +65,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; host environment
-(defn fail [message]
-  (RuntimeException. message))
+#?(:clj
+   (def ch? char?)
 
-(defn digit?
-  "Tests if a character is a digit: [0-9]"
-  [c]
-  (Character/isDigit ^Character c))
+   :cljs
+   (defn ch?
+     "Test for a single-character string.
+     ClojureScript doesn't support a character type, so we pretend it does"
+     [x]
+     (and (string? x) (= (count x) 1))))
 
-(defn letter?
-  "Tests if a character is a letter: [a-zA-Z]"
-  [c]
-  (Character/isLetter ^Character c))
+#?(:clj
+   (defn digit?
+     "Tests if a character is a digit: [0-9]"
+     [c]
+     (Character/isDigit ^Character c))
+
+  :cljs
+   (defn digit?
+     "Tests if a character is a digit: [0-9]"
+     [c]
+     (re-matches #"\d" c)))
+
+#?(:clj
+   (defn letter?
+     "Tests if a character is a letter: [a-zA-Z]"
+     [c]
+     (Character/isLetter ^Character c))
+
+  :cljs
+   (defn letter?
+     "Tests if a character is a letter: [a-zA-Z]"
+     [c]
+     (re-matches #"[a-zA-Z]" c)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; m
@@ -200,10 +221,10 @@
    combinator is applied to a parser that accepts the empty string, as
    that would cause the parser to loop forever"
   [p]
-  (letfn [(many-err [_ _]
-            (fail "Combinator '*' is applied to a parser that accepts an empty string"))
+  (letfn [(many-err [pos _ _]
+            (Err. "Combinator '*' is applied to a parser that accepts an empty string" pos))
           (safe-p [state cok cerr eok eerr]
-            (Continue. #(p state cok cerr many-err eerr)))]
+            (Continue. #(p state cok cerr (partial many-err (:pos state)) eerr)))]
     (either
      (let->> [x safe-p
               xs (many safe-p)]
@@ -247,7 +268,7 @@
       (eok nil state)
       (eerr (expect-error "end of input" pos)))))
 
-(defn char
+(defn ch
   "Consume the given character"
   [c]
   (token #(= c %)))
@@ -255,7 +276,7 @@
 (defn any-char
   "Consume any character"
   []
-  (token char?))
+  (token ch?))
 
 (defn digit
   "Consume a digit [0-9] character"
@@ -270,7 +291,7 @@
 (defn string
   "Consume the given string"
   [s]
-  (reduce nxt (concat (map char s)
+  (reduce nxt (concat (map ch s)
                       (list (always s)))))
 
 (defn between
@@ -298,11 +319,11 @@
                     (fn cok [item _]
                       (Ok. item))
                     (fn cerr [err]
-                      (Err. (show-error err)))
+                      (Err. (show-error err) (:pos err)))
                     (fn eok [item _]
                       (Ok. item))
                     (fn eerr [err]
-                      (Err. (show-error err)))))
+                      (Err. (show-error err) (:pos err)))))
 
 (defn run
   "Run a parser p over some input. The input can be a string or a seq
@@ -313,4 +334,4 @@
   (let [result (run-parser p (InputState. input (SourcePos. 1 1)))]
     (condp instance? result
       Ok (:item result)
-      Err (throw (fail ^String (:errmsg result))))))
+      Err (throw (ex-info ^String (:errmsg result) (:pos result))))))
